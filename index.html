@@ -335,37 +335,138 @@ button.btn-ghost:hover { border-color: var(--green); color: var(--green); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
 
+/* ── MOBILE ─────────────────────────────────────────── */
 @media (max-width: 700px) {
   .sidebar { display: none; }
-  .main { padding: 16px; }
-  .grid2, .grid3 { grid-template-columns: 1fr; }
-  .mob-nav {
+
+  .main { padding: 14px 14px 80px; }
+
+  .page-title { font-size: 17px; margin-bottom: 14px; }
+
+  .metrics     { grid-template-columns: 1fr 1fr; }
+  .mc-val      { font-size: 18px; }
+  .grid2       { grid-template-columns: 1fr; }
+  .grid3       { grid-template-columns: 1fr 1fr; }
+  .form-grid   { grid-template-columns: 1fr; }
+
+  td { padding: 9px 10px; font-size: 12px; }
+  th { padding: 8px 10px; }
+
+  /* mobile header */
+  .mob-header {
     display: flex;
-    overflow-x: auto;
-    gap: 6px;
-    padding: 12px 16px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
     background: var(--bg2);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
-    z-index: 10;
+    z-index: 20;
   }
-  .mob-nav button {
-    flex-shrink: 0;
+  .mob-header-logo { font-size: 14px; font-weight: 600; color: var(--text); }
+  .mob-header-sub  { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  /* bottom nav */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    z-index: 50;
+    height: 62px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .bn-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+    transition: color 0.15s;
+  }
+  .bn-item.active { color: var(--green); }
+  .bn-item svg { width: 20px; height: 20px; }
+
+  /* drawer overlay */
+  .mob-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 55;
+    backdrop-filter: blur(2px);
+  }
+  .mob-overlay.open { display: block; }
+
+  /* drawer panel */
+  .mob-drawer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--bg2);
+    border-radius: 18px 18px 0 0;
+    border-top: 1px solid var(--border2);
+    z-index: 60;
+    padding: 0 16px calc(24px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+  }
+  .mob-drawer.open { transform: translateY(0); }
+
+  .drawer-handle {
+    width: 40px; height: 4px;
+    background: var(--bg4);
+    border-radius: 2px;
+    margin: 12px auto 20px;
+  }
+  .drawer-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .drawer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 12px;
     background: var(--bg3);
     border: 1px solid var(--border);
-    color: var(--text2);
-    border-radius: 20px;
-    font-size: 12px;
-    padding: 6px 14px;
+    border-radius: var(--radius);
     cursor: pointer;
-    white-space: nowrap;
-    font-family: 'DM Sans', sans-serif;
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.12s;
   }
-  .mob-nav button.active { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .drawer-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .drawer-item.active {
+    color: var(--green);
+    background: var(--green-bg);
+    border-color: rgba(34,208,122,0.25);
+  }
 }
+
 @media (min-width: 701px) {
-  .mob-nav { display: none; }
+  .mob-header  { display: none; }
+  .bottom-nav  { display: none; }
+  .mob-overlay { display: none !important; }
+  .mob-drawer  { display: none !important; }
 }
 </style>
 </head>
@@ -422,15 +523,9 @@ button.btn-ghost:hover { border-color: var(--green); color: var(--green); }
   </nav>
 
   <div style="flex:1;display:flex;flex-direction:column;">
-    <div class="mob-nav" id="mobnav">
-      <button class="active" onclick="showTabMob('visao',this)">Visão geral</button>
-      <button onclick="showTabMob('clientes',this)">Clientes</button>
-      <button onclick="showTabMob('parcelas',this)">Atrasos</button>
-      <button onclick="showTabMob('boletos',this)">Boletos</button>
-      <button onclick="showTabMob('projecao',this)">Projeção</button>
-      <button onclick="showTabMob('online',this)">Online</button>
-      <button onclick="showTabMob('estoque',this)">Estoque</button>
-      <button onclick="showTabMob('novo',this)">+ Cadastrar</button>
+    <div class="mob-header">
+      <span class="mob-header-logo">Móveis &amp; Colchões</span>
+      <span class="mob-header-sub">dashboard</span>
     </div>
     <div class="main">
       <div id="visao"    class="section active"></div>
@@ -517,20 +612,46 @@ function clienteStatus(c) {
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
+const BOTTOM_TABS = new Set(['visao','clientes','boletos','online']);
+
+function _syncMobNav(id) {
+  document.querySelectorAll('.bn-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('bn-' + (BOTTOM_TABS.has(id) ? id : 'mais'))?.classList.add('active');
+  document.querySelectorAll('.drawer-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === id);
+  });
+}
+
 function showTab(id, el) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if (el) el.classList.add('active');
+  _syncMobNav(id);
+  closeDrawer();
   renders[id] && renders[id]();
 }
 
-function showTabMob(id, el) {
+function showTabMob(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.mob-nav button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  if (el) el.classList.add('active');
+  _syncMobNav(id);
+  closeDrawer();
   renders[id] && renders[id]();
+}
+
+function openDrawer() {
+  const cur = document.querySelector('.section.active')?.id;
+  document.querySelectorAll('.drawer-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === cur);
+  });
+  document.getElementById('mob-overlay')?.classList.add('open');
+  document.getElementById('mob-drawer')?.classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('mob-overlay')?.classList.remove('open');
+  document.getElementById('mob-drawer')?.classList.remove('open');
 }
 
 // ─── Renders ─────────────────────────────────────────────────────────────────
@@ -1050,5 +1171,57 @@ async function atualizarEst(id, nome, atual) {
   renders.visao();
 })();
 </script>
+
+<!-- ── MOBILE BOTTOM NAV ──────────────────────────────── -->
+<nav class="bottom-nav">
+  <div class="bn-item active" id="bn-visao" onclick="showTabMob('visao')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Início</span>
+  </div>
+  <div class="bn-item" id="bn-clientes" onclick="showTabMob('clientes')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span>Clientes</span>
+  </div>
+  <div class="bn-item" id="bn-boletos" onclick="showTabMob('boletos')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span>Boletos</span>
+  </div>
+  <div class="bn-item" id="bn-online" onclick="showTabMob('online')">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    <span>Online</span>
+  </div>
+  <div class="bn-item" id="bn-mais" onclick="openDrawer()">
+    <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    <span>Mais</span>
+  </div>
+</nav>
+
+<!-- Overlay escuro ao abrir drawer -->
+<div class="mob-overlay" id="mob-overlay" onclick="closeDrawer()"></div>
+
+<!-- Drawer de seções secundárias -->
+<div class="mob-drawer" id="mob-drawer">
+  <div class="drawer-handle"></div>
+  <div class="drawer-title">Mais seções</div>
+  <div class="drawer-grid">
+    <div class="drawer-item" data-tab="parcelas" onclick="showTabMob('parcelas')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+      Atrasos
+    </div>
+    <div class="drawer-item" data-tab="projecao" onclick="showTabMob('projecao')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      Projeção
+    </div>
+    <div class="drawer-item" data-tab="estoque" onclick="showTabMob('estoque')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Estoque
+    </div>
+    <div class="drawer-item" data-tab="novo" onclick="showTabMob('novo')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Cadastrar
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
