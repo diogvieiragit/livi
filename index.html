@@ -167,17 +167,21 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
 
 /* ── MOBILE ── */
 @media(max-width:700px){
+  #app{overflow-x:hidden}
   .sidebar{display:none}
-  .main{padding:14px 14px 80px}
+  .main{padding:14px 14px 80px;overflow-x:hidden}
   .page-title{font-size:17px;margin-bottom:14px}
   .metrics{grid-template-columns:1fr 1fr}
   .mc-val{font-size:18px}
   .grid2{grid-template-columns:1fr}
   .grid3{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
-  td{padding:9px 10px;font-size:12px}
-  th{padding:8px 10px}
+  td{padding:8px 8px;font-size:12px}
+  th{padding:7px 8px}
   .hide-mob{display:none}
+  table{table-layout:auto}
+  .badge{font-size:9px;padding:2px 6px}
+  .action-btn{font-size:10px;padding:2px 6px}
   .modal-info-grid{grid-template-columns:1fr}
   .modal-actions{flex-direction:column}
 
@@ -315,6 +319,12 @@ function platBadge(p) {
 
 function statusBadge(st) {
   if (st==='inadimplente') return '<span class="badge b-in">⚠ Inadimplente</span>';
+  if (st==='atrasado')     return '<span class="badge b-at">Atrasado</span>';
+  if (st==='quitado')      return '<span class="badge b-done">Quitado</span>';
+  return '<span class="badge b-ok">Em dia</span>';
+}
+function statusBadgeCompact(st) {
+  if (st==='inadimplente') return '<span class="badge b-in">⚠ Inad.</span>';
   if (st==='atrasado')     return '<span class="badge b-at">Atrasado</span>';
   if (st==='quitado')      return '<span class="badge b-done">Quitado</span>';
   return '<span class="badge b-ok">Em dia</span>';
@@ -695,12 +705,12 @@ boletos() {
       <div class="card-header">Em aberto <button class="btn-ghost" style="font-size:11px;padding:5px 12px" onclick="toggleFormBol()">+ Novo boleto</button></div>
       <div class="tbl-wrap"><table>
         <thead><tr>
-          <th style="width:22%">Fornecedor</th>
-          <th class="hide-mob" style="width:26%">Descrição</th>
-          <th style="width:16%">Vencimento</th>
-          <th style="width:14%">Valor</th>
-          <th style="width:12%">Status</th>
-          <th style="width:10%">Ação</th>
+          <th style="width:20%">Fornecedor</th>
+          <th class="hide-mob" style="width:15%">Descrição</th>
+          <th style="width:14%">Vencimento</th>
+          <th style="width:13%">Valor</th>
+          <th class="hide-mob" style="width:13%">Status</th>
+          <th style="width:25%">Ação</th>
         </tr></thead>
         <tbody>
           ${pend.length?pend.map(b=>{
@@ -713,8 +723,8 @@ boletos() {
               <td class="hide-mob" title="${esc(b.descricao)}">${esc(b.descricao)}</td>
               <td>${fmtDate(b.venc)}</td>
               <td class="mono" style="color:${vencido?'var(--red)':'var(--text)'}">${fmtR(b.valor)}</td>
-              <td><span class="badge ${brd}">${brl}</span></td>
-              <td style="white-space:nowrap">
+              <td class="hide-mob"><span class="badge ${brd}">${brl}</span></td>
+              <td style="overflow:visible;white-space:nowrap">
                 <button class="action-btn" onclick="marcarBoletoPago('${b.id}')">✓ Pago</button>
                 <button class="action-btn danger" style="margin-left:4px" onclick="excluirBoleto('${b.id}')">✕</button>
               </td>
@@ -727,7 +737,7 @@ boletos() {
       <div class="card-header">Pagos recentemente</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th style="width:28%">Fornecedor</th><th class="hide-mob" style="width:33%">Descrição</th><th style="width:16%">Valor</th><th style="width:23%">Ações</th></tr></thead>
-        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td><td style="white-space:nowrap"><button class="action-btn" style="color:var(--text3)" onclick="reverterBoletoPago('${b.id}')">↩ Reverter</button> <button class="action-btn danger" onclick="excluirBoleto('${b.id}')">✕</button></td></tr>`).join(''):`<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago</td></tr>`}</tbody>
+        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td><td style="overflow:visible;white-space:nowrap"><button class="action-btn" style="color:var(--text3)" onclick="reverterBoletoPago('${b.id}')">↩ Reverter</button> <button class="action-btn danger" onclick="excluirBoleto('${b.id}')">✕</button></td></tr>`).join(''):`<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago</td></tr>`}</tbody>
       </table></div>
     </div>`;
 },
@@ -828,7 +838,7 @@ online() {
           <td class="hide-mob" title="${esc(v.prod||'')}">${esc((v.prod||'').split(' ').slice(0,3).join(' '))||'—'}</td>
           <td>${fmtDate(v.data)}</td>
           <td class="mono" style="color:var(--amber)">${fmtR(v.valor)}</td>
-          <td style="white-space:nowrap">
+          <td style="overflow:visible;white-space:nowrap">
             <button class="action-btn" onclick="marcarRepassado('${v.id}')">✓ Repasse</button>
             <button class="action-btn danger" style="margin-left:4px" onclick="excluirVenda('${v.id}')">✕</button>
           </td>
@@ -873,7 +883,7 @@ function _renderCl() {
       <td class="hide-mob" title="${esc(prods.join(', '))}">${esc(prodLabel)}</td>
       <td class="hide-mob mono">${fmtR(c.total)}</td>
       <td>${pagas}/${c.nparc||0}</td>
-      <td>${statusBadge(st2)}</td>
+      <td>${statusBadgeCompact(st2)}</td>
     </tr>`;
   }).join('');
 }
