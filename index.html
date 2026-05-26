@@ -182,6 +182,7 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
   table{table-layout:auto}
   .badge{font-size:9px;padding:2px 6px}
   .action-btn{font-size:10px;padding:2px 6px}
+  input[type=text],input[type=number],input[type=date],select,textarea{font-size:16px}
   .modal-info-grid{grid-template-columns:1fr}
   .modal-actions{flex-direction:column}
 
@@ -520,7 +521,6 @@ async function salvarEdicaoCliente(cId) {
 }
 
 async function excluirCliente(cId) {
-  if (!confirm('Excluir este cliente e todas as parcelas? Esta ação não pode ser desfeita.')) return;
   const {error}=await db.from('clientes').delete().eq('id',cId);
   if (error) { alert('Erro: '+error.message); return; }
   document.getElementById('modal-overlay').classList.remove('open');
@@ -960,42 +960,36 @@ async function cadastrarOnline() {
 }
 
 async function marcarBoletoPago(id) {
-  if(!confirm('Marcar este boleto como pago?'))return;
   const {error}=await db.from('boletos').update({pago:true}).eq('id',id);
   if(error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.boletos();
 }
 
 async function excluirBoleto(id) {
-  if(!confirm('Excluir este boleto?'))return;
   const {error}=await db.from('boletos').delete().eq('id',id);
   if(error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.boletos();
 }
 
 async function marcarRepassado(id) {
-  if(!confirm('Marcar esta venda como repassada?'))return;
   const {error}=await db.from('vendas_online').update({status:'repassado'}).eq('id',id);
   if(error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.online();
 }
 
 async function excluirVenda(id) {
-  if(!confirm('Excluir esta venda?'))return;
   const {error}=await db.from('vendas_online').delete().eq('id',id);
   if(error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.online();
 }
 
 async function reverterParcelaPaga(parcelaId, cId) {
-  if (!confirm('Reverter este pagamento para pendente?')) return;
   const {error}=await db.from('parcelas').update({paga:false,pago_em:null}).eq('id',parcelaId);
   if (error){alert('Erro: '+error.message);return;}
   await loadAll(); _refreshActiveSection(); abrirModal(cId);
 }
 
 async function reverterBoletoPago(id) {
-  if (!confirm('Reverter este boleto para pendente?')) return;
   const {error}=await db.from('boletos').update({pago:false}).eq('id',id);
   if (error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.boletos();
