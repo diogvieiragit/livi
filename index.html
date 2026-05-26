@@ -568,8 +568,10 @@ async function toggleAtrasadoManual(cId, val) {
 }
 
 async function marcarParcelaPaga(parcelaId, cId) {
-  const today = new Date().toISOString().split('T')[0];
-  const {error}=await db.from('parcelas').update({paga:true,pago_em:today}).eq('id',parcelaId);
+  const p = clientes.flatMap(c=>c.parcelas||[]).find(x=>x.id===parcelaId);
+  const hoje_str = new Date().toISOString().split('T')[0];
+  const pagoEm = (p?.venc && p.venc < hoje_str) ? p.venc : hoje_str;
+  const {error}=await db.from('parcelas').update({paga:true,pago_em:pagoEm}).eq('id',parcelaId);
   if (error) { alert('Erro: '+error.message); return; }
   await loadAll();
   _refreshActiveSection();
