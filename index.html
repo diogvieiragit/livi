@@ -343,17 +343,29 @@ let clientes = [], boletos = [], vendasOnline = [];
 
 // ─── Data Layer ──────────────────────────────────────────────────────────────
 async function loadAll() {
+  const fetchParcelas = async () => {
+    const out = [];
+    let from = 0;
+    while (true) {
+      const {data} = await db.from('parcelas').select('*').range(from, from+999);
+      if (!data?.length) break;
+      out.push(...data);
+      if (data.length < 1000) break;
+      from += 1000;
+    }
+    return out;
+  };
   const [
-    {data:cls, error:e1}, {data:parc, error:e2},
-    {data:bols,error:e3}, {data:vend, error:e4},
+    {data:cls,error:e1}, parc,
+    {data:bols,error:e3}, {data:vend,error:e4},
   ] = await Promise.all([
-    db.from('clientes').select('*').order('created_at',{ascending:false}).limit(10000),
-    db.from('parcelas').select('*').limit(50000),
+    db.from('clientes').select('*').order('created_at',{ascending:false}),
+    fetchParcelas(),
     db.from('boletos').select('*').order('venc',{ascending:true}),
     db.from('vendas_online').select('*').order('data',{ascending:false}),
   ]);
-  if (e1||e2||e3||e4) { console.error('Erro ao carregar',e1||e2||e3||e4); return false; }
-  clientes = (cls||[]).map(c => ({...c, parcelas:(parc||[]).filter(p=>p.cliente_id===c.id)}));
+  if (e1||e3||e4) { console.error('Erro ao carregar',e1||e3||e4); return false; }
+  clientes = (cls||[]).map(c => ({...c, parcelas:(parc||[]).filter(p=>p.cliente_id==c.id)}));
   boletos      = bols||[];
   vendasOnline = vend||[];
   return true;
