@@ -342,8 +342,8 @@ async function loadAll() {
     {data:cls, error:e1}, {data:parc, error:e2},
     {data:bols,error:e3}, {data:vend, error:e4},
   ] = await Promise.all([
-    db.from('clientes').select('*').order('created_at',{ascending:false}),
-    db.from('parcelas').select('*'),
+    db.from('clientes').select('*').order('created_at',{ascending:false}).limit(10000),
+    db.from('parcelas').select('*').limit(50000),
     db.from('boletos').select('*').order('venc',{ascending:true}),
     db.from('vendas_online').select('*').order('data',{ascending:false}),
   ]);
