@@ -297,7 +297,12 @@ const db = createClient(SUPA_URL, SUPA_KEY);
 const hoje = new Date(); hoje.setHours(0,0,0,0);
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function addMeses(d, n) { const r = new Date(d); r.setMonth(r.getMonth()+n); return r; }
+function addMeses(d, n) {
+  const r = new Date(d); const dia = r.getDate();
+  r.setDate(1); r.setMonth(r.getMonth()+n);
+  r.setDate(Math.min(dia, new Date(r.getFullYear(), r.getMonth()+1, 0).getDate()));
+  return r;
+}
 function fmtDate(d) { if (!d||d==='—') return '—'; return new Date(d+'T12:00:00').toLocaleDateString('pt-BR'); }
 function fmtMes(d)  { return new Date(d).toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}); }
 function fmtR(v)    { return 'R$ '+Math.round(v||0).toLocaleString('pt-BR'); }
@@ -480,13 +485,15 @@ function _renderModalView(c) {
 function _renderModalEdit(cId) {
   const c = clientes.find(x=>x.id===cId); if (!c) return;
   const prods = parseProds(c.prod);
+  const primeiraVenc = (c.parcelas||[]).sort((a,b)=>a.num-b.num)[0]?.venc || '';
   document.getElementById('modal-body').innerHTML = `
     <div class="form-grid">
       <div class="form-group"><label>Nome</label><input type="text" id="e-nome" value="${esc(c.nome||'')}"></div>
       <div class="form-group"><label>WhatsApp</label><input type="text" id="e-tel" value="${esc(c.tel||'')}"></div>
       <div class="form-group"><label>Valor total (R$)</label><input type="number" id="e-total" value="${c.total||''}"></div>
       <div class="form-group"><label>N° parcelas</label><input type="number" id="e-nparc" value="${c.nparc||''}"></div>
-      <div class="form-group" style="grid-column:1/-1"><label>Indicado por</label><input type="text" id="e-indicado" value="${esc(c.indicado||'')}"></div>
+      <div class="form-group"><label>Data 1ª parcela</label><input type="date" id="e-venc1" value="${primeiraVenc}"></div>
+      <div class="form-group"><label>Indicado por</label><input type="text" id="e-indicado" value="${esc(c.indicado||'')}"></div>
       <div class="form-group" style="grid-column:1/-1">
         <label>Produtos</label>
         <div id="edit-prods"></div>
@@ -503,10 +510,12 @@ function _renderModalEdit(cId) {
 }
 
 async function salvarEdicaoCliente(cId) {
+  const c       = clientes.find(x=>x.id===cId);
   const nome    = document.getElementById('e-nome')?.value.trim();
   const tel     = document.getElementById('e-tel')?.value.trim();
   const total   = parseFloat(document.getElementById('e-total')?.value);
   const nparc   = parseInt(document.getElementById('e-nparc')?.value);
+  const venc1   = document.getElementById('e-venc1')?.value;
   const indicado= document.getElementById('e-indicado')?.value.trim();
   const prods   = getProds('edit-prods');
   if (!nome) { const m=document.getElementById('modal-msg'); if(m){m.className='msg-err';m.textContent='Nome é obrigatório.';} return; }
@@ -517,6 +526,15 @@ async function salvarEdicaoCliente(cId) {
   if (prods.length) upd.prod=JSON.stringify(prods);
   const {error}=await db.from('clientes').update(upd).eq('id',cId);
   if (error) { const m=document.getElementById('modal-msg'); if(m){m.className='msg-err';m.textContent='Erro: '+error.message;} return; }
+  if (venc1 && c) {
+    const sorted = (c.parcelas||[]).sort((a,b)=>a.num-b.num);
+    if (sorted.length && sorted[0].venc !== venc1) {
+      const inicio = new Date(venc1+'T12:00:00');
+      await Promise.all(sorted.map((p,i)=>
+        db.from('parcelas').update({venc:addMeses(new Date(inicio),i).toISOString().split('T')[0]}).eq('id',p.id)
+      ));
+    }
+  }
   await loadAll();
   _refreshActiveSection();
   abrirModal(cId);
