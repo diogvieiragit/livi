@@ -453,7 +453,7 @@ function _renderModalView(c) {
           </div>
           <div style="display:flex;align-items:center;gap:8px">
             <span class="mono ${p.paga?'parc-paga':''}">${fmtR(p.valor)}</span>
-            ${!p.paga?`<button class="action-btn" onclick="marcarParcelaPaga('${p.id}','${c.id}')">✓ Pago</button>`:'<span style="font-size:10px;color:var(--green)">✓ Paga</span>'}
+            ${!p.paga?`<button class="action-btn" onclick="marcarParcelaPaga('${p.id}','${c.id}')">✓ Pago</button>`:`<button class="action-btn" style="color:var(--text3)" onclick="reverterParcelaPaga('${p.id}','${c.id}')">↩ Reverter</button>`}
           </div>
         </div>`;
       }).join('')||'<p style="font-size:13px;color:var(--text3)">Nenhuma parcela</p>'}
@@ -562,7 +562,7 @@ visao() {
     <div class="mc mc-blue"><div class="mc-label">À receber no mês</div><div class="mc-val">${fmtR(aRecMes)}</div><div class="mc-sub">parcelas pendentes do mês</div></div>
     <div class="mc mc-green"><div class="mc-label">Recebido no mês</div><div class="mc-val">${fmtR(recMes)}</div><div class="mc-sub">já recebido este mês</div></div>
     <div class="mc mc-red"><div class="mc-label">Boletos a pagar</div><div class="mc-val">${fmtR(totalBol)}</div><div class="mc-sub">${bPend.length} boleto${bPend.length!==1?'s':''} pendentes</div></div>
-    <div class="mc ${saldoMes>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo do mês</div><div class="mc-val">${fmtR(saldoMes)}</div><div class="mc-sub">receber + recebido − boletos</div></div>
+    <div class="mc ${saldoMes>=0?'mc-green':'mc-red'}"><div class="mc-label">Projeção do mês</div><div class="mc-val">${fmtR(saldoMes)}</div><div class="mc-sub">receber + recebido − boletos</div></div>
   </div>`;
 
   if (bolVenc.length) html+=`<div class="alert alert-red"><span>⚠</span><span>${bolVenc.length} boleto${bolVenc.length>1?'s':''} vencido${bolVenc.length>1?'s':''} — total ${fmtR(totBolVenc)}</span></div>`;
@@ -726,8 +726,8 @@ boletos() {
     <div class="card">
       <div class="card-header">Pagos recentemente</div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th style="width:35%">Fornecedor</th><th class="hide-mob" style="width:40%">Descrição</th><th>Valor</th></tr></thead>
-        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td></tr>`).join(''):`<tr><td colspan="3" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago</td></tr>`}</tbody>
+        <thead><tr><th style="width:28%">Fornecedor</th><th class="hide-mob" style="width:33%">Descrição</th><th style="width:16%">Valor</th><th style="width:23%">Ações</th></tr></thead>
+        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td><td style="white-space:nowrap"><button class="action-btn" style="color:var(--text3)" onclick="reverterBoletoPago('${b.id}')">↩ Reverter</button> <button class="action-btn danger" onclick="excluirBoleto('${b.id}')">✕</button></td></tr>`).join(''):`<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago</td></tr>`}</tbody>
       </table></div>
     </div>`;
 },
@@ -975,6 +975,20 @@ async function excluirVenda(id) {
   const {error}=await db.from('vendas_online').delete().eq('id',id);
   if(error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.online();
+}
+
+async function reverterParcelaPaga(parcelaId, cId) {
+  if (!confirm('Reverter este pagamento para pendente?')) return;
+  const {error}=await db.from('parcelas').update({paga:false,pago_em:null}).eq('id',parcelaId);
+  if (error){alert('Erro: '+error.message);return;}
+  await loadAll(); _refreshActiveSection(); abrirModal(cId);
+}
+
+async function reverterBoletoPago(id) {
+  if (!confirm('Reverter este boleto para pendente?')) return;
+  const {error}=await db.from('boletos').update({pago:false}).eq('id',id);
+  if (error){alert('Erro: '+error.message);return;}
+  await loadAll(); renders.boletos();
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
