@@ -697,7 +697,7 @@ clientes() {
         <option value="">Todos</option><option>em dia</option><option>atrasado</option><option>inadimplente</option><option>quitado</option>
       </select>
       <select id="sc-ord" onchange="_renderCl()">
-        <option value="venc">Próx. vencimento</option>
+        <option value="venc" selected>Próx. vencimento</option>
         <option value="nome">Nome A-Z</option>
         <option value="nome-desc">Nome Z-A</option>
         <option value="recente">Mais recente</option>
@@ -975,7 +975,7 @@ online() {
 function _renderCl() {
   const q=(document.getElementById('sc-q')?.value||'').toLowerCase();
   const st=document.getElementById('sc-st')?.value||'';
-  const ord=document.getElementById('sc-ord')?.value||'recente';
+  const ord=document.getElementById('sc-ord')?.value||'venc';
   const f=clientes.filter(c=>{
     const prods=parseProds(c.prod).join(' ').toLowerCase();
     const matchQ=!q||c.nome.toLowerCase().includes(q)||prods.includes(q);
