@@ -642,16 +642,33 @@ visao() {
   const prox7b=boletos.filter(b=>!b.pago).filter(b=>{const d2=diff(new Date(b.venc+'T12:00:00'),hoje);return d2>=0&&d2<=7;}).sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
   const prox7c=[];
   clientes.forEach(c=>(c.parcelas||[]).forEach(p=>{
-    if(!p.paga){const d2=diff(new Date(p.venc+'T12:00:00'),hoje);if(d2>=0&&d2<=7)prox7c.push({nome:c.nome,venc:p.venc,valor:p.valor});}
+    if(!p.paga){
+      const d2=diff(new Date(p.venc+'T12:00:00'),hoje);
+      const atrasoDias=diff(hoje,new Date(p.venc+'T12:00:00'));
+      if(d2>=0&&d2<=7||atrasoDias>0)
+        prox7c.push({nome:c.nome,venc:p.venc,valor:p.valor,id:p.id,cId:c.id,atrasoDias});
+    }
   }));
+  prox7c.sort((a,b)=>new Date(a.venc)-new Date(b.venc));
 
   if (isHoje) {
     html+=`<div class="grid2">
       <div class="card"><div class="card-header">Boletos vencendo em 7 dias</div><div class="card-body">
         ${prox7b.length?prox7b.map(b=>{const d2=diff(new Date(b.venc+'T12:00:00'),hoje);return`<div class="list-item"><div><div style="font-size:13px">${esc(b.fornecedor)}</div><div style="font-size:11px;color:var(--text3)">${esc(b.descricao)}</div></div><div style="text-align:right"><div class="mono" style="color:${d2<=2?'var(--red)':'var(--amber)'}">${fmtR(b.valor)}</div><div style="font-size:11px;color:var(--text3)">${fmtDate(b.venc)}</div></div></div>`;}).join(''):'<p style="font-size:13px;color:var(--text3)">Nenhum boleto vencendo em 7 dias</p>'}
       </div></div>
-      <div class="card"><div class="card-header">Parcelas clientes — próx. 7 dias</div><div class="card-body">
-        ${prox7c.length?prox7c.map(p=>`<div class="list-item"><div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${esc(p.nome)}</div><div class="mono" style="color:var(--green)">${fmtR(p.valor)}</div></div>`).join(''):'<p style="font-size:13px;color:var(--text3)">Nenhuma parcela vencendo em 7 dias</p>'}
+      <div class="card"><div class="card-header">Parcelas clientes — próx. 7 dias + atrasados</div><div class="card-body">
+        ${prox7c.length?prox7c.map(p=>{
+          const cor=p.atrasoDias>0?'var(--amber)':'var(--green)';
+          const label=p.atrasoDias>0?`<span style="font-size:10px;color:var(--amber);margin-left:4px">(${p.atrasoDias}d atraso)</span>`:'';
+          return`<div class="list-item" style="gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nome)}${label}</div>
+              <div style="font-size:11px;color:var(--text3)">${fmtDate(p.venc)}</div>
+            </div>
+            <div class="mono" style="color:${cor};white-space:nowrap">${fmtR(p.valor)}</div>
+            <button class="action-btn" onclick="marcarParcelaPagaVisao('${p.id}','${p.cId}')">✓ Pago</button>
+          </div>`;
+        }).join(''):'<p style="font-size:13px;color:var(--text3)">Nenhuma parcela pendente</p>'}
       </div></div>
     </div>`;
   } else {
@@ -678,6 +695,12 @@ clientes() {
       <input type="text" id="sc-q" placeholder="Buscar cliente ou produto..." oninput="_renderCl()">
       <select id="sc-st" onchange="_renderCl()">
         <option value="">Todos</option><option>em dia</option><option>atrasado</option><option>inadimplente</option><option>quitado</option>
+      </select>
+      <select id="sc-ord" onchange="_renderCl()">
+        <option value="recente">Mais recente</option>
+        <option value="nome">Nome A-Z</option>
+        <option value="nome-desc">Nome Z-A</option>
+        <option value="venc">Próx. vencimento</option>
       </select>
       <button class="btn-ghost" onclick="toggleFormCl()">+ Novo cliente</button>
     </div>
@@ -952,11 +975,20 @@ online() {
 function _renderCl() {
   const q=(document.getElementById('sc-q')?.value||'').toLowerCase();
   const st=document.getElementById('sc-st')?.value||'';
+  const ord=document.getElementById('sc-ord')?.value||'recente';
   const f=clientes.filter(c=>{
     const prods=parseProds(c.prod).join(' ').toLowerCase();
     const matchQ=!q||c.nome.toLowerCase().includes(q)||prods.includes(q);
     const matchSt=!st||clienteStatus(c)===st;
     return matchQ&&matchSt;
+  });
+  if(ord==='nome') f.sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  else if(ord==='nome-desc') f.sort((a,b)=>b.nome.localeCompare(a.nome,'pt-BR'));
+  else if(ord==='venc') f.sort((a,b)=>{
+    const proxA=(a.parcelas||[]).filter(p=>!p.paga).sort((x,y)=>new Date(x.venc)-new Date(y.venc))[0];
+    const proxB=(b.parcelas||[]).filter(p=>!p.paga).sort((x,y)=>new Date(x.venc)-new Date(y.venc))[0];
+    if(!proxA&&!proxB) return 0; if(!proxA) return 1; if(!proxB) return -1;
+    return new Date(proxA.venc)-new Date(proxB.venc);
   });
   const body=document.getElementById('cl-body'); if (!body) return;
   const cntEl=document.getElementById('cl-count'); if(cntEl) cntEl.textContent=`(${f.length})`;
@@ -980,6 +1012,15 @@ function _renderCl() {
 function mudarVisaoMes(dir) {
   visaoMes = new Date(visaoMes.getFullYear(), visaoMes.getMonth()+dir, 1);
   renders.visao();
+}
+
+async function marcarParcelaPagaVisao(parcelaId, cId) {
+  const p = clientes.flatMap(c=>c.parcelas||[]).find(x=>x.id===parcelaId);
+  const hoje_str = new Date().toISOString().split('T')[0];
+  const pagoEm = (p?.venc && p.venc < hoje_str) ? p.venc : hoje_str;
+  const {error}=await db.from('parcelas').update({paga:true,pago_em:pagoEm}).eq('id',parcelaId);
+  if (error){alert('Erro: '+error.message);return;}
+  await loadAll(); renders.visao();
 }
 
 function toggleFormCl(){document.getElementById('form-cl')?.classList.toggle('open')}
