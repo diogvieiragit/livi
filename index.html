@@ -595,30 +595,30 @@ visao() {
   const mesLabel = vm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const isHoje = vmM===hoje.getMonth()&&vmY===hoje.getFullYear();
 
-  const aRecMes = clientes.reduce((a,c)=>a+(c.parcelas||[])
-    .filter(p=>!p.paga&&isSelMonth(p.venc))
+  // ── FIXO: todas as parcelas do mês (pagas + não pagas) ──
+  const todasParcMes = clientes.reduce((a,c)=>a+(c.parcelas||[])
+    .filter(p=>isSelMonth(p.venc))
     .reduce((s,p)=>s+p.valor,0),0);
+  const todosBolMes = boletos.filter(b=>{const bv=new Date(b.venc+'T12:00:00');return bv.getMonth()===vmM&&bv.getFullYear()===vmY;});
+  const totalBolMesFixo = todosBolMes.reduce((s,b)=>s+b.valor,0);
+  const saldoPrevisto = todasParcMes - totalBolMesFixo;
+
+  // ── TEMPO REAL ──
   const recMes = clientes.reduce((a,c)=>a+(c.parcelas||[])
     .filter(p=>p.paga&&(isSelMonth(p.pago_em)||(!p.pago_em&&isSelMonth(p.venc))))
     .reduce((s,p)=>s+p.valor,0),0);
-
-  const bPendMes = boletos.filter(b=>!b.pago&&(()=>{
+  const bolPagosMes = todosBolMes.filter(b=>b.pago);
+  const totalBolPagos = bolPagosMes.reduce((s,b)=>s+b.valor,0);
+  const bolAbertoMes = boletos.filter(b=>!b.pago&&(()=>{
     const bv=new Date(b.venc+'T12:00:00');
     if (bv.getMonth()===vmM&&bv.getFullYear()===vmY) return true;
     if (bv<vm&&diff(hoje,bv)>0) return true;
     return false;
   })());
-  const totalBol = bPendMes.reduce((s,b)=>s+b.valor,0);
-  const bolVenc  = bPendMes.filter(b=>diff(hoje,new Date(b.venc+'T12:00:00'))>0);
+  const totalBolAberto = bolAbertoMes.reduce((s,b)=>s+b.valor,0);
+  const bolVenc = bolAbertoMes.filter(b=>diff(hoje,new Date(b.venc+'T12:00:00'))>0);
   const totBolVenc = bolVenc.reduce((s,b)=>s+b.valor,0);
-  const bolDoMes = bPendMes.filter(b=>{const bv=new Date(b.venc+'T12:00:00');return bv.getMonth()===vmM&&bv.getFullYear()===vmY;});
-  const bolAtrasados = bPendMes.filter(b=>{const bv=new Date(b.venc+'T12:00:00');return bv<vm;});
-
-  const saldoMes = aRecMes+recMes-totalBol;
   const atrasados = clientes.filter(c=>['atrasado','inadimplente'].includes(clienteStatus(c))).length;
-
-  let subBol = `${bolDoMes.length} do mês`;
-  if (bolAtrasados.length) subBol += ` + ${bolAtrasados.length} atrasado${bolAtrasados.length>1?'s':''}`;
 
   let html=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
     <div class="page-title" style="margin-bottom:0">Visão geral</div>
@@ -629,14 +629,22 @@ visao() {
       ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="visaoMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.visao()">Hoje</button>`:''}
     </div>
   </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Resumo do mês</div>
+  <div class="metrics" style="margin-bottom:16px">
+    <div class="mc mc-blue"><div class="mc-label">Receita projetada</div><div class="mc-val">${fmtR(todasParcMes)}</div><div class="mc-sub">total de parcelas do mês</div></div>
+    <div class="mc mc-red"><div class="mc-label">Despesas do mês</div><div class="mc-val">${fmtR(totalBolMesFixo)}</div><div class="mc-sub">${todosBolMes.length} boleto${todosBolMes.length!==1?'s':''} no mês</div></div>
+    <div class="mc ${saldoPrevisto>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo previsto</div><div class="mc-val">${fmtR(saldoPrevisto)}</div><div class="mc-sub">receita − despesas</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tempo real</div>
   <div class="metrics">
-    <div class="mc mc-blue"><div class="mc-label">À receber no mês</div><div class="mc-val">${fmtR(aRecMes)}</div><div class="mc-sub">parcelas pendentes do mês</div></div>
-    <div class="mc mc-green"><div class="mc-label">Recebido no mês</div><div class="mc-val">${fmtR(recMes)}</div><div class="mc-sub">já recebido neste mês</div></div>
-    <div class="mc mc-red"><div class="mc-label">Boletos a pagar</div><div class="mc-val">${fmtR(totalBol)}</div><div class="mc-sub">${subBol}</div></div>
-    <div class="mc ${saldoMes>=0?'mc-green':'mc-red'}"><div class="mc-label">Projeção do mês</div><div class="mc-val">${fmtR(saldoMes)}</div><div class="mc-sub">receber + recebido − boletos</div></div>
+    <div class="mc mc-green"><div class="mc-label">Recebido</div><div class="mc-val">${fmtR(recMes)}</div><div class="mc-sub">parcelas pagas no mês</div></div>
+    <div class="mc" style="border-color:rgba(34,208,122,.25)"><div class="mc-label">Boletos pagos</div><div class="mc-val" style="color:var(--text3)">${fmtR(totalBolPagos)}</div><div class="mc-sub">${bolPagosMes.length} de ${todosBolMes.length} pagos</div></div>
+    <div class="mc mc-amber"><div class="mc-label">Boletos em aberto</div><div class="mc-val">${fmtR(totalBolAberto)}</div><div class="mc-sub">${bolAbertoMes.length} pendente${bolAbertoMes.length!==1?'s':''}</div></div>
   </div>`;
 
-  if (bolVenc.length&&isHoje) html+=`<div class="alert alert-red"><span>⚠</span><span>${bolVenc.length} boleto${bolVenc.length>1?'s':''} vencido${bolVenc.length>1?'s':''} — total ${fmtR(totBolVenc)}</span></div>`;
+  if (bolVenc.length&&isHoje) html+=`<div class="alert alert-red" style="margin-top:12px"><span>⚠</span><span>${bolVenc.length} boleto${bolVenc.length>1?'s':''} vencido${bolVenc.length>1?'s':''} — total ${fmtR(totBolVenc)}</span></div>`;
   if (atrasados&&isHoje)      html+=`<div class="alert alert-amber"><span>!</span><span>${atrasados} cliente${atrasados>1?'s':''} com pagamento em atraso</span></div>`;
 
   const prox7b=boletos.filter(b=>!b.pago).filter(b=>{const d2=diff(new Date(b.venc+'T12:00:00'),hoje);return d2>=0&&d2<=7;}).sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
@@ -672,7 +680,7 @@ visao() {
       </div></div>
     </div>`;
   } else {
-    const bolMesList = bPendMes.sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
+    const bolMesList = bolAbertoMes.sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
     const parcMes = [];
     clientes.forEach(c=>(c.parcelas||[]).filter(p=>!p.paga&&isSelMonth(p.venc)).forEach(p=>parcMes.push({nome:c.nome,venc:p.venc,valor:p.valor})));
     parcMes.sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
