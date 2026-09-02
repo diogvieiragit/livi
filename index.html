@@ -1378,11 +1378,9 @@ function baixarContrato(cId, formato) {
   } else {
     const container=document.createElement('div');
     container.innerHTML=html;
-    Object.assign(container.style,{position:'fixed',left:'0',top:'0',width:'800px',background:'#fff',color:'#000',zIndex:'-9999',padding:'0',margin:'0'});
-    container.querySelectorAll('*').forEach(el=>{el.style.color='#000';el.style.background='transparent';});
-    container.querySelector('div').style.background='#fff';
+    Object.assign(container.style,{position:'absolute',left:'0',top:'0',width:'800px',background:'#fff',color:'#000',zIndex:'99999'});
     document.body.appendChild(container);
-    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,scrollY:0,windowWidth:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['avoid-all','css','legacy']}}).from(container).save().then(()=>document.body.removeChild(container));
+    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,scrollY:0,y:0,windowWidth:820},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(container).save().then(()=>document.body.removeChild(container));
   }
 }
 
