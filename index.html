@@ -1377,10 +1377,18 @@ function baixarContrato(cId, formato) {
     URL.revokeObjectURL(url);
   } else {
     const container=document.createElement('div');
+    container.id='_pdf_temp';
     container.innerHTML=html;
-    Object.assign(container.style,{position:'absolute',left:'0',top:'0',width:'800px',background:'#fff',color:'#000',zIndex:'99999'});
     document.body.appendChild(container);
-    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,scrollY:0,y:0,windowWidth:820},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(container).save().then(()=>document.body.removeChild(container));
+    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},
+      html2canvas:{scale:2,useCORS:true,onclone:function(doc){
+        var a=doc.getElementById('app');if(a)a.style.display='none';
+        var l=doc.getElementById('loading');if(l)l.style.display='none';
+        var m=doc.getElementById('modal-overlay');if(m)m.style.display='none';
+        var bn=doc.querySelector('.bottom-nav');if(bn)bn.style.display='none';
+      }},
+      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
+    }).from(container).save().then(()=>container.remove());
   }
 }
 
