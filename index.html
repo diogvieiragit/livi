@@ -1261,18 +1261,18 @@ function _gerarContratoHTML(c){
   const fpg=c.forma_pagamento||'PIX';
   const prazo=c.prazo_entrega||30;
   const prodRows=prods.length?prods.map(p=>`<tr><td style="border:1px solid #999;padding:6px">${p}</td><td style="border:1px solid #999;padding:6px;text-align:center">1</td><td style="border:1px solid #999;padding:6px;text-align:right">${fmtR(c.total/prods.length)}</td><td style="border:1px solid #999;padding:6px;text-align:right">${fmtR(c.total/prods.length)}</td></tr>`).join(''):`<tr><td style="border:1px solid #999;padding:6px">—</td><td style="border:1px solid #999;padding:6px;text-align:center">1</td><td style="border:1px solid #999;padding:6px;text-align:right">${fmtR(c.total)}</td><td style="border:1px solid #999;padding:6px;text-align:right">${fmtR(c.total)}</td></tr>`;
-  return`<div style="font-family:'Times New Roman',serif;font-size:13px;color:#000;line-height:1.7;max-width:700px;margin:0 auto;padding:40px 30px">
+  return`<div style="font-family:'Times New Roman',serif;font-size:13px;color:#000 !important;line-height:1.7;max-width:700px;margin:0 auto;padding:40px 30px;background:#fff">
 <div style="text-align:center;margin-bottom:30px">
   <img src="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png" style="height:60px;margin-bottom:10px" crossorigin="anonymous">
-  <h2 style="font-size:18px;font-weight:bold;margin:10px 0">CONTRATO DE COMPRA E VENDA DE MÓVEIS</h2>
+  <h2 style="font-size:18px;font-weight:bold;margin:10px 0;color:#000">CONTRATO DE COMPRA E VENDA DE MÓVEIS</h2>
 </div>
-<h3 style="font-size:14px;text-decoration:underline;margin-bottom:12px">PREÂMBULO</h3>
+<h3 style="font-size:14px;text-decoration:underline;margin-bottom:12px;color:#000">PREÂMBULO</h3>
 <p>PAULO HENRIQUE FEITOSA DE SOUSA, empresário individual, inscrito no CNPJ n. 62.072.487/0001-75, com estabelecimento comercial na Rua Osório Franco Vilhena, 188, Vila Nova Curuçá, São Paulo/SP, CEP 08.030-590, com e-mail paulo_live28@outlook.com e telefone (11) 4548-1788, doravante denominado simplesmente <b>VENDEDOR</b>;</p>
 <p>e</p>
 <p><b>${c.nome.toUpperCase()}</b>, ${c.profissao||'[profissão]'}, portador(a) da Cédula de Identidade RG n. ${c.rg||'[__________]'} e inscrito(a) no CPF sob o n. ${c.cpf||'[__________]'}, residente e domiciliado(a) na ${c.endereco||'[endereço completo]'}, CEP ${c.cep||'[________]'}, com e-mail ${c.email||'[________]'} e telefone ${c.tel||'[________]'}, doravante denominado(a) simplesmente <b>COMPRADOR(A)</b>;</p>
 <p>As partes acima qualificadas, doravante designadas em conjunto como "Partes" e, individualmente, como "Parte", têm entre si, justo e contratado, o presente Contrato de Compra e Venda de Móveis, que se regerá pelas cláusulas e condições seguintes:</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 1ª – Objeto</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 1ª – Objeto</h3>
 <p><b>1.1.</b> O presente Contrato tem por objeto a compra e venda, pelo <b>VENDEDOR</b> ao(à) <b>COMPRADOR(A)</b>, dos móveis descritos e especificados no pedido/orçamento que integra este Contrato como parte inseparável, compreendendo tanto móveis prontos quanto móveis modulados (planejados), bem como colchões e artigos de colchoaria, cama, mesa e banho, conforme o caso.</p>
 <p><b>1.2.</b> O(s) produto(s) objeto deste Contrato, suas quantidades, cores, medidas, materiais, acabamentos e valores encontram-se especificados no pedido de venda anexo, que, assinado ou aprovado pelo(a) <b>COMPRADOR(A)</b>, passa a integrar o presente instrumento para todos os fins de direito.</p>
 <table style="width:100%;border-collapse:collapse;margin:14px 0">
@@ -1284,20 +1284,20 @@ ${prodRows}
 <p><b>1.4.</b> Tratando-se de móveis modulados ou planejados, o(a) <b>COMPRADOR(A)</b> declara ter aprovado previamente o projeto, as medidas e o layout, reconhecendo que se trata de produto personalizado e fabricado sob medida e por encomenda, conforme suas especificações, o que impede a revenda a terceiros e afasta o direito de arrependimento e devolução, nos termos deste Contrato.</p>
 <p><b>1.5.</b> Eventuais pequenas variações de tonalidade, textura, veios da madeira ou medidas, decorrentes da natureza dos materiais e do processo de fabricação, não caracterizam vício ou defeito do produto, desde que dentro dos padrões usuais de mercado.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 2ª – Preço e Forma de Pagamento</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 2ª – Preço e Forma de Pagamento</h3>
 <p><b>2.1.</b> Pela aquisição dos produtos objeto deste Contrato, o(a) <b>COMPRADOR(A)</b> pagará ao <b>VENDEDOR</b> o valor total discriminado no quadro do item 1.2 deste Contrato.</p>
 <p><b>2.2.</b> O pagamento será realizado da seguinte forma: (i) a título de entrada/sinal, o valor de R$ ${fmtR(entrada).replace('R$','').trim()} (${_valorExtenso(entrada)}), pago no ato da assinatura deste Contrato; e (ii) o saldo remanescente de R$ ${fmtR(saldo).replace('R$','').trim()} (${_valorExtenso(saldo)}), em ${c.nparc} (${_numExtenso(c.nparc)}) parcelas fixas, iguais e sucessivas de R$ ${fmtR(c.parc_val).replace('R$','').trim()} (${_valorExtenso(c.parc_val)}) cada, vencendo-se a primeira em ${venc1?_dataExtenso(venc1):'[__/__/____]'} e as demais no mesmo dia dos meses subsequentes.</p>
 <p><b>2.3.</b> O sinal/entrada previsto no item 2.2 (i) tem natureza confirmatória do negócio (arras confirmatórias) e será integralmente retido pelo <b>VENDEDOR</b> na hipótese de desistência ou cancelamento por parte do(a) <b>COMPRADOR(A)</b>, nos termos da Cláusula 6ª.</p>
 <p><b>2.4.</b> As parcelas são fixas e não sofrem incidência de juros ou correção durante o seu curso normal, salvo em caso de atraso, hipótese em que se aplicará o disposto na Cláusula 3ª.</p>
 <p><b>2.5.</b> O pagamento poderá ser realizado por meio de ${fpg}, conforme ajustado entre as Partes, considerando-se quitada cada parcela somente após a efetiva compensação do respectivo valor.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 3ª – Inadimplemento e Vencimento Antecipado</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 3ª – Inadimplemento e Vencimento Antecipado</h3>
 <p><b>3.1.</b> O atraso no pagamento de qualquer parcela sujeitará o(a) <b>COMPRADOR(A)</b>, independentemente de notificação, ao pagamento de multa moratória de 10% (dez por cento) sobre o valor da parcela em atraso, acrescida de juros de mora de 1% (um por cento) ao mês, calculados pro rata die, além da correção monetária pelo índice IPCA, ou outro que o venha a substituir.</p>
 <p><b>3.2.</b> O atraso no pagamento por período superior a 15 (quinze) dias implicará, de pleno direito e independentemente de aviso, interpelação ou notificação judicial ou extrajudicial, o vencimento antecipado de todas as demais parcelas vincendas, que se tornarão imediatamente exigíveis, acrescidas dos encargos previstos no item 3.1, aplicando-se o vencimento antecipado exclusivamente às hipóteses de pagamento parcelado (prestação continuada).</p>
 <p><b>3.3.</b> Configurado o vencimento antecipado, poderá o <b>VENDEDOR</b> exigir de imediato a totalidade do saldo devedor, bem como adotar as medidas de cobrança e execução cabíveis, inclusive as previstas nas Cláusulas 5ª e 9ª.</p>
 <p><b>3.4.</b> O não exercício, pelo <b>VENDEDOR</b>, de qualquer direito ou faculdade previstos neste Contrato constitui mera liberalidade, não implicando novação, renúncia ou alteração das condições ora pactuadas.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 4ª – Entrega e Montagem</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 4ª – Entrega e Montagem</h3>
 <p><b>4.1.</b> O prazo de entrega dos produtos é de ${prazo} (${_numExtenso(prazo)}) dias, contados da assinatura do contrato, podendo variar conforme o produto e o respectivo fabricante, conforme informado ao(à) <b>COMPRADOR(A)</b> no ato da venda.</p>
 <p><b>4.2.</b> A entrega será realizada pelo próprio <b>VENDEDOR</b> no endereço indicado pelo(a) <b>COMPRADOR(A)</b> no preâmbulo, ou em outro endereço por este(a) previamente informado por escrito, dentro do Município da Grande São Paulo e Alto Tietê.</p>
 <p><b>4.3.</b> A montagem e a instalação dos móveis estão incluídas no preço, sendo realizadas pelo <b>VENDEDOR</b> ou por equipe por ele designada, salvo disposição expressa em contrário no pedido de venda.</p>
@@ -1305,41 +1305,41 @@ ${prodRows}
 <p><b>4.5.</b> Os prazos de entrega e montagem ficam automaticamente suspensos enquanto pendente o pagamento do sinal ou de qualquer parcela vencida, bem como na ocorrência de caso fortuito ou força maior, retomando-se o curso após cessada a causa impeditiva.</p>
 <p><b>4.6.</b> No ato da entrega, o(a) <b>COMPRADOR(A)</b> deverá conferir os produtos, com suas eventuais ressalvas por escrito no comprovante de entrega, sendo que a ausência de ressalvas presume o recebimento dos produtos em perfeitas condições e em conformidade com o contratado.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 5ª – Reserva de Domínio</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 5ª – Reserva de Domínio</h3>
 <p><b>5.1.</b> Os produtos objeto deste Contrato são vendidos com reserva de domínio, nos termos dos artigos 521 a 528 do Código Civil, de modo que a propriedade dos bens permanece com o <b>VENDEDOR</b> até o pagamento integral do preço, ainda que a posse seja transferida ao(à) <b>COMPRADOR(A)</b> no ato da entrega.</p>
 <p><b>5.2.</b> Enquanto não quitado o preço, o(a) <b>COMPRADOR(A)</b> é fiel depositário(a) dos produtos, obrigando-se a conservá-los, não podendo aliená-los, cedê-los, empenhá-los, dá-los em garantia ou removê-los para fora do endereço de entrega sem prévia e expressa autorização escrita do <b>VENDEDOR</b>.</p>
 <p><b>5.3.</b> Verificado o inadimplemento e o vencimento antecipado nos termos da Cláusula 3ª, poderá o <b>VENDEDOR</b>, a seu exclusivo critério, requerer a apreensão e a retomada dos produtos com fundamento na reserva de domínio, recuperando a posse dos bens.</p>
 <p><b>5.4.</b> Fica facultado ao <b>VENDEDOR</b>, a seu exclusivo critério, renunciar à reserva de domínio e à retomada dos produtos, optando por prosseguir na cobrança e na execução da integralidade do saldo devedor, com os encargos previstos neste Contrato, valendo-se do presente instrumento como título executivo extrajudicial, nos termos da Cláusula 9ª, sem que tal opção configure novação ou renúncia a qualquer outro direito.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 6ª – Desistência, Cancelamento e Trocas</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 6ª – Desistência, Cancelamento e Trocas</h3>
 <p><b>6.1.</b> Em caso de desistência ou cancelamento do negócio por iniciativa do(a) <b>COMPRADOR(A)</b>, por qualquer motivo, o <b>VENDEDOR</b> reterá integralmente o valor pago a título de entrada/sinal, a título de perdas e danos previamente estabelecidas, sem prejuízo do disposto nos itens seguintes.</p>
 <p><b>6.2.</b> Tratando-se de móveis modulados, planejados ou fabricados sob medida ou por encomenda, bem como de qualquer produto cuja fabricação, corte, montagem ou pedido junto ao fabricante já tenha sido iniciado, o(a) <b>COMPRADOR(A)</b> responderá, além da perda do sinal, pelos custos comprovadamente incorridos e pelas parcelas vencidas até a data da desistência.</p>
 <p><b>6.3.</b> O(A) <b>COMPRADOR(A)</b> declara ter examinado previamente os produtos, conforme a Cláusula 1ª, e reconhece que a compra não foi realizada fora do estabelecimento comercial de forma a ensejar direito de arrependimento, não lhe assistindo, portanto, direito à devolução, à restituição de valores ou ao desfazimento do negócio por simples mudança de vontade.</p>
 <p><b>6.4.</b> O <b>VENDEDOR</b> não pratica política de trocas ou devoluções por arrependimento, gosto, medida, cor ou conveniência do(a) <b>COMPRADOR(A)</b>, ressalvadas exclusivamente as hipóteses de vício ou defeito do produto, na forma da Cláusula 7ª e da legislação aplicável.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 7ª – Garantia</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 7ª – Garantia</h3>
 <p><b>7.1.</b> Os produtos possuem garantia legal contra vícios de fabricação pelo prazo de 90 (noventa) dias, contados da data da entrega, nos termos do artigo 26 do Código de Defesa do Consumidor.</p>
 <p><b>7.2.</b> Especificamente quanto a colchões, o <b>VENDEDOR</b> oferece garantia de 1 (um) ano, contado da data da entrega, contra defeitos de fabricação, observadas as condições de uso e conservação indicadas pelo fabricante.</p>
 <p><b>7.3.</b> A garantia limita-se ao reparo ou à substituição do produto ou da peça defeituosa, a critério do <b>VENDEDOR</b>, não abrangendo: (i) danos decorrentes de mau uso, uso inadequado, negligência ou conservação imprópria; (ii) desgaste natural pelo uso; (iii) exposição a umidade, calor, sol ou produtos químicos em desacordo com as recomendações; (iv) danos causados por transporte, remontagem ou intervenção realizados por terceiros não autorizados pelo <b>VENDEDOR</b>; e (v) alterações, modificações ou consertos feitos pelo(a) próprio(a) <b>COMPRADOR(A)</b> ou por terceiros.</p>
 <p><b>7.4.</b> Para acionar a garantia, o(a) <b>COMPRADOR(A)</b> deverá comunicar o <b>VENDEDOR</b> por escrito, descrevendo o vício ou defeito e permitindo a verificação do produto.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 8ª – Obrigações das Partes</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 8ª – Obrigações das Partes</h3>
 <p><b>8.1.</b> São obrigações do <b>VENDEDOR</b>:</p>
 <p>(i) fornecer os produtos conforme especificado no pedido de venda;<br>(ii) realizar a entrega e a montagem no prazo e nas condições ajustados;<br>(iii) prestar a garantia nos termos da Cláusula 7ª; e<br>(iv) emitir os documentos fiscais correspondentes à venda.</p>
 <p><b>8.2.</b> São obrigações do(a) <b>COMPRADOR(A)</b>:</p>
 <p>(i) efetuar o pagamento do preço na forma e nos prazos ajustados;<br>(ii) conferir os produtos no ato da entrega;<br>(iii) zelar pela guarda e conservação dos produtos, sobretudo enquanto vigente a reserva de domínio;<br>(iv) fornecer condições adequadas para a entrega e a montagem; e<br>(v) manter atualizados seus dados de contato e endereço perante o <b>VENDEDOR</b>.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 9ª – Título Executivo Extrajudicial</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 9ª – Título Executivo Extrajudicial</h3>
 <p><b>9.1.</b> As Partes reconhecem que o presente Contrato, assinado por elas e por 2 (duas) testemunhas, constitui título executivo extrajudicial, líquido, certo e exigível, nos termos do artigo 784, inciso III, do Código de Processo Civil, autorizando a cobrança do saldo devedor por meio de ação de execução.</p>
 <p><b>9.2.</b> Reconhecem, ainda, que os valores em aberto, acrescidos da multa, dos juros, da correção monetária e demais encargos previstos neste Contrato, poderão ser cobrados diretamente pela via executiva, independentemente de prévia ação de conhecimento.</p>
 <p><b>9.3.</b> Em qualquer medida judicial ou extrajudicial de cobrança ou execução, o(a) <b>COMPRADOR(A)</b> responderá, ainda, pelas custas processuais e pelos honorários advocatícios, estes fixados em 20% (vinte por cento) sobre o valor do débito atualizado.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 10ª – Proteção de Dados Pessoais (LGPD)</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 10ª – Proteção de Dados Pessoais (LGPD)</h3>
 <p><b>10.1.</b> As Partes obrigam-se a tratar os dados pessoais a que tiverem acesso em razão deste Contrato em conformidade com a Lei nº 13.709/2018 (Lei Geral de Proteção de Dados – LGPD) e demais normas aplicáveis.</p>
 <p><b>10.2.</b> O(A) <b>COMPRADOR(A)</b> autoriza o <b>VENDEDOR</b> a coletar e tratar seus dados pessoais fornecidos neste Contrato exclusivamente para as finalidades de execução, cobrança, cumprimento de obrigações legais e regulatórias e comunicação relativa ao negócio, pelo prazo necessário a tais finalidades.</p>
 <p><b>10.3.</b> O <b>VENDEDOR</b> compromete-se a adotar medidas de segurança adequadas à proteção dos dados pessoais e a não os compartilhar com terceiros, salvo quando necessário à execução deste Contrato ou por exigência legal.</p>
 
-<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px">Cláusula 11ª – Disposições Finais</h3>
+<h3 style="font-size:14px;font-weight:bold;margin:20px 0 10px;color:#000">Cláusula 11ª – Disposições Finais</h3>
 <p><b>11.1.</b> O presente Contrato representa o integral acordo entre as Partes com relação ao seu objeto, substituindo quaisquer tratativas, propostas ou entendimentos anteriores, verbais ou escritos.</p>
 <p><b>11.2.</b> Qualquer alteração ou aditamento a este Contrato somente produzirá efeitos se realizado por escrito e assinado por ambas as Partes.</p>
 <p><b>11.3.</b> A eventual tolerância de qualquer das Partes quanto ao descumprimento de obrigação pela outra não implicará novação, renúncia ou precedente, podendo a parte prejudicada exigir o cumprimento a qualquer tempo.</p>
@@ -1378,9 +1378,11 @@ function baixarContrato(cId, formato) {
   } else {
     const container=document.createElement('div');
     container.innerHTML=html;
-    container.style.background='#fff';
+    Object.assign(container.style,{position:'fixed',left:'0',top:'0',width:'800px',background:'#fff',color:'#000',zIndex:'-9999',padding:'0',margin:'0'});
+    container.querySelectorAll('*').forEach(el=>{el.style.color='#000';el.style.background='transparent';});
+    container.querySelector('div').style.background='#fff';
     document.body.appendChild(container);
-    html2pdf().set({margin:[15,10,15,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}}).from(container).save().then(()=>document.body.removeChild(container));
+    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},html2canvas:{scale:2,useCORS:true,scrollY:0,windowWidth:800},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['avoid-all','css','legacy']}}).from(container).save().then(()=>document.body.removeChild(container));
   }
 }
 
