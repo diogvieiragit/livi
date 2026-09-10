@@ -31,7 +31,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);fon
 /* SIDEBAR */
 .sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
 .logo{padding:0 20px 24px;border-bottom:1px solid var(--border);margin-bottom:16px}
-.logo-title{font-size:15px;font-weight:600;color:var(--text)}
+.logo-title{font-size:15px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.logo-title img{width:28px;height:28px;border-radius:6px}
 .logo-sub{font-size:11px;color:var(--text3);margin-top:2px;font-family:'DM Mono',monospace}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all .15s;user-select:none}
 .nav-item:hover{color:var(--text);background:var(--bg3)}
@@ -105,6 +106,7 @@ tr:hover td{background:var(--bg3)}
 .form-group label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
 input[type=text],input[type=number],input[type=date],input[type=email],select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
 input:focus,select:focus{border-color:var(--green)}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1) brightness(0.8);cursor:pointer}
 select option{background:var(--bg3)}
 
 /* FORM PANEL (collapsible) */
@@ -193,7 +195,8 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
   .modal-actions{flex-direction:column}
 
   .mob-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--bg2);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
-  .mob-header-logo{font-size:14px;font-weight:600;color:var(--text)}
+  .mob-header-logo{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px}
+  .mob-header-logo img{width:22px;height:22px;border-radius:4px}
   .mob-header-sub{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace}
 
   .bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);z-index:50;height:62px;padding-bottom:env(safe-area-inset-bottom)}
@@ -231,7 +234,7 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
 <div id="app" style="display:none">
   <nav class="sidebar">
     <div class="logo">
-      <div class="logo-title">Livi.</div>
+      <div class="logo-title"><img src="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.svg" alt="Livi">Livi.</div>
       <div class="logo-sub">Colchões &amp; Planejados</div>
     </div>
     <div class="nav-section-label">Geral</div>
@@ -278,7 +281,7 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
 
   <div style="flex:1;display:flex;flex-direction:column">
     <div class="mob-header">
-      <span class="mob-header-logo">Livi.</span>
+      <span class="mob-header-logo"><img src="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.svg" alt="Livi">Livi.</span>
       <span class="mob-header-sub">Colchões &amp; Planejados</span>
     </div>
     <div class="main">
@@ -1723,6 +1726,8 @@ function baixarContrato(cId, formato) {
     }).from(container).save().then(()=>container.remove());
   }
 }
+
+document.addEventListener('wheel',function(e){if(e.target.type==='number')e.preventDefault();},{passive:false});
 
 // ─── Boot ─────────────────────────────────────────────────────────────────────
 (async function init(){
