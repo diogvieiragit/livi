@@ -103,7 +103,7 @@ tr:hover td{background:var(--bg3)}
 /* FORMS */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .form-group label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600}
-input[type=text],input[type=number],input[type=date],select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
+input[type=text],input[type=number],input[type=date],input[type=email],select,textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
 input:focus,select:focus{border-color:var(--green)}
 select option{background:var(--bg3)}
 
@@ -188,7 +188,7 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
   table{table-layout:auto}
   .badge{font-size:9px;padding:2px 6px}
   .action-btn{font-size:10px;padding:2px 6px}
-  input[type=text],input[type=number],input[type=date],select,textarea{font-size:16px}
+  input[type=text],input[type=number],input[type=date],input[type=email],select,textarea{font-size:16px}
   .modal-info-grid{grid-template-columns:1fr}
   .modal-actions{flex-direction:column}
 
@@ -253,6 +253,18 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Boletos fornecedor
     </div>
+    <div class="nav-item" onclick="showTab('compras',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Compras
+    </div>
+    <div class="nav-item" onclick="showTab('despesas',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5Z"/><path d="M21 12h-3a2 2 0 0 0 0 4h3Z"/></svg>
+      Despesas
+    </div>
+    <div class="nav-item" onclick="showTab('resumo',this)">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 4h16v2H4z"/><path d="M4 10h16v2H4z"/><path d="M4 16h10v2H4z"/><circle cx="19" cy="17" r="3"/><path d="M19 15v2h2"/></svg>
+      Resumo mensal
+    </div>
     <div class="nav-item" onclick="showTab('projecao',this)">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
       Projeção
@@ -274,11 +286,16 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
       <div id="clientes" class="section"></div>
       <div id="parcelas" class="section"></div>
       <div id="boletos"  class="section"></div>
+      <div id="compras"  class="section"></div>
+      <div id="despesas" class="section"></div>
+      <div id="resumo"   class="section"></div>
       <div id="projecao" class="section"></div>
       <div id="online"   class="section"></div>
     </div>
   </div>
 </div>
+
+<datalist id="prod-catalog"></datalist>
 
 <!-- CLIENT MODAL -->
 <div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
@@ -344,7 +361,11 @@ function statusBadgeCompact(st) {
 
 // ─── State ───────────────────────────────────────────────────────────────────
 let clientes = [], boletos = [], vendasOnline = [];
+let compras = [], despesas = [], produtos = [];
 let visaoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+let comprasMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+let despesasMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+let resumoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 
 // ─── Data Layer ──────────────────────────────────────────────────────────────
 async function loadAll() {
@@ -363,16 +384,24 @@ async function loadAll() {
   const [
     {data:cls,error:e1}, parc,
     {data:bols,error:e3}, {data:vend,error:e4},
+    {data:comp,error:e5}, {data:desp,error:e6}, {data:prod,error:e7},
   ] = await Promise.all([
     db.from('clientes').select('*').order('created_at',{ascending:false}),
     fetchParcelas(),
     db.from('boletos').select('*').order('venc',{ascending:true}),
     db.from('vendas_online').select('*').order('data',{ascending:false}),
+    db.from('compras').select('*').order('data',{ascending:false}),
+    db.from('despesas').select('*').order('data',{ascending:false}),
+    db.from('produtos').select('*').order('nome',{ascending:true}),
   ]);
-  if (e1||e3||e4) { console.error('Erro ao carregar',e1||e3||e4); return false; }
+  if (e1||e3||e4||e5||e6||e7) { console.error('Erro ao carregar',e1||e3||e4||e5||e6||e7); return false; }
   clientes = (cls||[]).map(c => ({...c, parcelas:(parc||[]).filter(p=>p.cliente_id==c.id)}));
   boletos      = bols||[];
   vendasOnline = vend||[];
+  compras      = comp||[];
+  despesas     = desp||[];
+  produtos     = prod||[];
+  _renderProdCatalog();
   return true;
 }
 
@@ -426,9 +455,20 @@ function closeDrawer() {
 function addProdInput(containerId, val='') {
   const c = document.getElementById(containerId); if (!c) return;
   const d = document.createElement('div'); d.className='prod-row';
-  d.innerHTML=`<input type="text" placeholder="Ex: Beliche solteiro MDF" value="${esc(val)}">
+  d.innerHTML=`<input type="text" list="prod-catalog" placeholder="Ex: Beliche solteiro MDF" value="${esc(val)}">
     <button type="button" class="prod-row-rm" onclick="this.parentElement.remove()">✕</button>`;
   c.appendChild(d);
+}
+function _renderProdCatalog() {
+  const dl = document.getElementById('prod-catalog'); if (!dl) return;
+  dl.innerHTML = produtos.map(p=>`<option value="${esc(p.nome)}"></option>`).join('');
+}
+async function _salvarNovosProdutos(prods) {
+  if (!prods || !prods.length) return;
+  const existentes = new Set(produtos.map(p=>p.nome.toLowerCase()));
+  const novos = [...new Set(prods.map(p=>p.trim()).filter(Boolean))].filter(p=>!existentes.has(p.toLowerCase()));
+  if (!novos.length) return;
+  await db.from('produtos').upsert(novos.map(nome=>({nome})), {onConflict:'nome', ignoreDuplicates:true});
 }
 function getProds(containerId) {
   return [...document.querySelectorAll('#'+containerId+' .prod-row input')]
@@ -506,8 +546,66 @@ function _renderModalView(c) {
     </div>
     <div class="modal-actions">
       <button class="btn-ghost" onclick="_renderModalEdit('${c.id}')">Editar</button>
+      <button class="btn-ghost" onclick="_renderModalNovaCompra('${c.id}')">Nova compra</button>
       <button class="btn-danger" onclick="excluirCliente('${c.id}')">Excluir</button>
     </div>`;
+}
+
+function _renderModalNovaCompra(cId) {
+  const c = clientes.find(x=>x.id===cId); if (!c) return;
+  document.getElementById('modal-body').innerHTML = `
+    <div class="modal-section-title">Nova compra — ${esc(c.nome)}</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Valor total (R$)</label><input type="number" id="nc-total" placeholder="1200"></div>
+      <div class="form-group"><label>Nº parcelas</label><input type="number" id="nc-nparc" placeholder="6" min="1"></div>
+      <div class="form-group"><label>1ª parcela</label><input type="date" id="nc-venc1" value="${new Date().toISOString().split('T')[0]}"></div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Produtos</label>
+        <div id="nc-prods"></div>
+        <button type="button" class="btn-ghost" style="margin-top:6px;width:auto;font-size:11px" onclick="addProdInput('nc-prods')">+ Adicionar produto</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="btn-nc" onclick="salvarNovaCompraCliente('${cId}')">Salvar compra</button>
+      <button class="btn-ghost" style="width:auto" onclick="abrirModal('${cId}')">Cancelar</button>
+    </div>
+    <div id="modal-msg" style="margin-top:8px"></div>`;
+  addProdInput('nc-prods');
+}
+
+async function salvarNovaCompraCliente(cId) {
+  const c = clientes.find(x=>x.id===cId); if (!c) return;
+  const total = parseFloat(document.getElementById('nc-total')?.value);
+  const nparc = parseInt(document.getElementById('nc-nparc')?.value);
+  const venc1 = document.getElementById('nc-venc1')?.value;
+  const prods = getProds('nc-prods');
+  const m=document.getElementById('modal-msg');
+  if (!total||!nparc||!venc1) { if(m){m.className='msg-err';m.textContent='Preencha todos os campos obrigatórios.';} return; }
+  const btn=document.getElementById('btn-nc');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  const novoTotal = (c.total||0)+total;
+  const novoNparc = (c.nparc||0)+nparc;
+  const parcValNova = total/nparc;
+  const saldoTotal = novoTotal-(c.entrada||0);
+  const parcValGeral = saldoTotal/novoNparc;
+  const prodsExistentes = parseProds(c.prod);
+  const prodsAtualizados = [...prodsExistentes, ...prods];
+  const upd = {total:novoTotal, nparc:novoNparc, parc_val:parcValGeral, prod:JSON.stringify(prodsAtualizados)};
+  const {error:e1} = await db.from('clientes').update(upd).eq('id',cId);
+  if (e1) { if(m){m.className='msg-err';m.textContent='Erro: '+e1.message;} if(btn){btn.disabled=false;btn.textContent='Salvar compra';} return; }
+  const startNum = (c.parcelas||[]).reduce((max,p)=>Math.max(max,p.num),0);
+  const inicio = new Date(venc1+'T12:00:00');
+  const novasParcelas = Array.from({length:nparc},(_,i)=>({
+    cliente_id:cId, num:startNum+i+1,
+    venc:addMeses(new Date(inicio),i).toISOString().split('T')[0],
+    valor:parcValNova, paga:false
+  }));
+  const {error:e2} = await db.from('parcelas').insert(novasParcelas);
+  if (e2) { if(m){m.className='msg-err';m.textContent='Erro parcelas: '+e2.message;} if(btn){btn.disabled=false;btn.textContent='Salvar compra';} return; }
+  await _salvarNovosProdutos(prods);
+  await loadAll();
+  _refreshActiveSection();
+  abrirModal(cId);
 }
 
 function _renderModalEdit(cId) {
@@ -673,8 +771,8 @@ visao() {
   <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Resumo do mês</div>
   <div class="metrics" style="margin-bottom:16px">
     <div class="mc mc-blue"><div class="mc-label">Receita projetada</div><div class="mc-val">${fmtR(todasParcMes)}</div><div class="mc-sub">total de parcelas do mês</div></div>
-    <div class="mc mc-red"><div class="mc-label">Despesas do mês</div><div class="mc-val">${fmtR(totalBolMesFixo)}</div><div class="mc-sub">${todosBolMes.length} boleto${todosBolMes.length!==1?'s':''} no mês</div></div>
-    <div class="mc ${saldoPrevisto>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo previsto</div><div class="mc-val">${fmtR(saldoPrevisto)}</div><div class="mc-sub">receita − despesas</div></div>
+    <div class="mc mc-red"><div class="mc-label">Boletos do mês</div><div class="mc-val">${fmtR(totalBolMesFixo)}</div><div class="mc-sub">${todosBolMes.length} boleto${todosBolMes.length!==1?'s':''} no mês</div></div>
+    <div class="mc ${saldoPrevisto>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo previsto</div><div class="mc-val">${fmtR(saldoPrevisto)}</div><div class="mc-sub">receita − boletos</div></div>
   </div>
 
   <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Tempo real</div>
@@ -912,6 +1010,173 @@ boletos() {
     </div>`;
 },
 
+compras() {
+  const el = document.getElementById('compras');
+  const cm = comprasMes;
+  const cmM = cm.getMonth(), cmY = cm.getFullYear();
+  const mesLabel = cm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const isHoje = cmM===hoje.getMonth()&&cmY===hoje.getFullYear();
+  const list = compras.filter(c=>{const d=new Date(c.data+'T12:00:00');return d.getMonth()===cmM&&d.getFullYear()===cmY;}).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const total = list.reduce((s,c)=>s+(c.valor||0),0);
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div class="page-title" style="margin-bottom:0">Compras</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(-1)">←</button>
+        <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(1)">→</button>
+        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="comprasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.compras()">Hoje</button>`:''}
+        <button class="btn-ghost" onclick="toggleFormCompra()">+ Novo</button>
+      </div>
+    </div>
+    <div class="form-panel" id="form-compra">
+      <div class="form-grid">
+        <div class="form-group"><label>Item</label><input type="text" id="cp-item" list="prod-catalog" placeholder="Ex: Colchão Casal"></div>
+        <div class="form-group"><label>Fábrica</label><input type="text" id="cp-fab" placeholder="Nome da fábrica"></div>
+        <div class="form-group"><label>Valor (R$)</label><input type="number" id="cp-val" placeholder="1000"></div>
+        <div class="form-group"><label>Forma de pagamento</label>
+          <select id="cp-fpg"><option value="">Selecione</option><option>Dinheiro</option><option>PIX</option><option>Cartão</option><option>Boleto</option><option>Cheque</option></select>
+        </div>
+        <div class="form-group"><label>Data</label><input type="date" id="cp-data" value="${new Date().toISOString().split('T')[0]}"></div>
+      </div>
+      <div style="max-width:220px"><button class="btn" id="btn-compra" onclick="cadastrarCompra()">Cadastrar compra</button></div>
+      <div id="cpm"></div>
+    </div>
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:16%">Data</th>
+        <th style="width:28%">Item</th>
+        <th class="hide-mob" style="width:22%">Fábrica</th>
+        <th class="hide-mob" style="width:16%">Forma Pgto</th>
+        <th style="width:12%">Valor</th>
+        <th style="width:10%">Ação</th>
+      </tr></thead>
+      <tbody>
+        ${list.length?list.map(c=>`<tr>
+          <td>${fmtDate(c.data)}</td>
+          <td title="${esc(c.item)}">${esc(c.item)}</td>
+          <td class="hide-mob">${esc(c.fabrica)||'—'}</td>
+          <td class="hide-mob">${esc(c.forma_pagamento)||'—'}</td>
+          <td class="mono">${fmtR(c.valor)}</td>
+          <td><button class="action-btn danger" onclick="excluirCompra('${c.id}')">✕</button></td>
+        </tr>`).join(''):`<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">Nenhuma compra neste mês</td></tr>`}
+      </tbody>
+      <tfoot><tr><td colspan="5" style="font-weight:600;color:var(--text2)">Total do mês</td><td style="font-weight:600" class="mono">${fmtR(total)}</td></tr></tfoot>
+    </table></div></div>`;
+},
+
+despesas() {
+  const el = document.getElementById('despesas');
+  const dm = despesasMes;
+  const dmM = dm.getMonth(), dmY = dm.getFullYear();
+  const mesLabel = dm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const isHoje = dmM===hoje.getMonth()&&dmY===hoje.getFullYear();
+  const list = despesas.filter(d=>{const dt=new Date(d.data+'T12:00:00');return dt.getMonth()===dmM&&dt.getFullYear()===dmY;}).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const total = list.reduce((s,d)=>s+(d.valor||0),0);
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div class="page-title" style="margin-bottom:0">Despesas</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(-1)">←</button>
+        <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(1)">→</button>
+        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="despesasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.despesas()">Hoje</button>`:''}
+        <button class="btn-ghost" onclick="toggleFormDespesa()">+ Novo</button>
+      </div>
+    </div>
+    <div class="form-panel" id="form-despesa">
+      <div class="form-grid">
+        <div class="form-group"><label>Item</label><input type="text" id="dp-item" placeholder="Ex: Aluguel"></div>
+        <div class="form-group"><label>Fornecedor</label><input type="text" id="dp-forn" placeholder="Nome do fornecedor"></div>
+        <div class="form-group"><label>Valor (R$)</label><input type="number" id="dp-val" placeholder="1000"></div>
+        <div class="form-group"><label>Forma de pagamento</label>
+          <select id="dp-fpg"><option value="">Selecione</option><option>Dinheiro</option><option>PIX</option><option>Cartão</option><option>Boleto</option><option>Cheque</option></select>
+        </div>
+        <div class="form-group"><label>Data</label><input type="date" id="dp-data" value="${new Date().toISOString().split('T')[0]}"></div>
+      </div>
+      <div style="max-width:220px"><button class="btn" id="btn-despesa" onclick="cadastrarDespesa()">Cadastrar despesa</button></div>
+      <div id="dpm"></div>
+    </div>
+    <div class="card"><div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:16%">Data</th>
+        <th style="width:28%">Item</th>
+        <th class="hide-mob" style="width:22%">Fornecedor</th>
+        <th class="hide-mob" style="width:16%">Forma Pgto</th>
+        <th style="width:12%">Valor</th>
+        <th style="width:10%">Ação</th>
+      </tr></thead>
+      <tbody>
+        ${list.length?list.map(d=>`<tr>
+          <td>${fmtDate(d.data)}</td>
+          <td title="${esc(d.item)}">${esc(d.item)}</td>
+          <td class="hide-mob">${esc(d.fornecedor)||'—'}</td>
+          <td class="hide-mob">${esc(d.forma_pagamento)||'—'}</td>
+          <td class="mono">${fmtR(d.valor)}</td>
+          <td><button class="action-btn danger" onclick="excluirDespesa('${d.id}')">✕</button></td>
+        </tr>`).join(''):`<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">Nenhuma despesa neste mês</td></tr>`}
+      </tbody>
+      <tfoot><tr><td colspan="5" style="font-weight:600;color:var(--text2)">Total do mês</td><td style="font-weight:600" class="mono">${fmtR(total)}</td></tr></tfoot>
+    </table></div></div>`;
+},
+
+resumo() {
+  const el = document.getElementById('resumo');
+  const rm = resumoMes;
+  const rmM = rm.getMonth(), rmY = rm.getFullYear();
+  const isM = (ds) => { if(!ds) return false; const d=new Date(ds+'T12:00:00'); return d.getMonth()===rmM&&d.getFullYear()===rmY; };
+  const mesLabel = rm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const isHoje = rmM===hoje.getMonth()&&rmY===hoje.getFullYear();
+
+  const parcMes = clientes.reduce((a,c)=>a+(c.parcelas||[]).filter(p=>isM(p.venc)).reduce((s,p)=>s+p.valor,0),0);
+  const parcPagas = clientes.reduce((a,c)=>a+(c.parcelas||[]).filter(p=>p.paga&&isM(p.venc)).reduce((s,p)=>s+p.valor,0),0);
+  const parcPendentes = parcMes - parcPagas;
+  const bolMes = boletos.filter(b=>isM(b.venc));
+  const totalBol = bolMes.reduce((s,b)=>s+b.valor,0);
+  const bolPagos = bolMes.filter(b=>b.pago).reduce((s,b)=>s+b.valor,0);
+  const bolAberto = totalBol - bolPagos;
+  const comprasMesVal = compras.filter(c=>isM(c.data)).reduce((s,c)=>s+(c.valor||0),0);
+  const despesasMesVal = despesas.filter(d=>isM(d.data)).reduce((s,d)=>s+(d.valor||0),0);
+  const totalSaidas = totalBol + comprasMesVal + despesasMesVal;
+  const saldo = parcMes - totalSaidas;
+  const saldoReal = parcPagas - bolPagos - comprasMesVal - despesasMesVal;
+
+  const nClientes = new Set(clientes.filter(c=>(c.parcelas||[]).some(p=>isM(p.venc))).map(c=>c.id)).size;
+  const nCompras = compras.filter(c=>isM(c.data)).length;
+  const nDespesas = despesas.filter(d=>isM(d.data)).length;
+
+  el.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div class="page-title" style="margin-bottom:0">Resumo mensal</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarResumoMes(-1)">&#8592;</button>
+      <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
+      <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarResumoMes(1)">&#8594;</button>
+      ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="resumoMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.resumo()">Hoje</button>`:''}
+    </div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Entradas</div>
+  <div class="metrics" style="margin-bottom:16px">
+    <div class="mc mc-blue"><div class="mc-label">Receita projetada</div><div class="mc-val">${fmtR(parcMes)}</div><div class="mc-sub">${nClientes} cliente${nClientes!==1?'s':''} com parcelas</div></div>
+    <div class="mc mc-green"><div class="mc-label">Recebido</div><div class="mc-val">${fmtR(parcPagas)}</div><div class="mc-sub">parcelas pagas</div></div>
+    <div class="mc mc-amber"><div class="mc-label">A receber</div><div class="mc-val">${fmtR(parcPendentes)}</div><div class="mc-sub">parcelas pendentes</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Saídas</div>
+  <div class="metrics" style="margin-bottom:16px">
+    <div class="mc mc-red"><div class="mc-label">Boletos</div><div class="mc-val">${fmtR(totalBol)}</div><div class="mc-sub">${bolMes.length} boleto${bolMes.length!==1?'s':''} (${fmtR(bolPagos)} pagos)</div></div>
+    <div class="mc mc-red"><div class="mc-label">Compras</div><div class="mc-val">${fmtR(comprasMesVal)}</div><div class="mc-sub">${nCompras} compra${nCompras!==1?'s':''} de fábrica</div></div>
+    <div class="mc mc-red"><div class="mc-label">Despesas</div><div class="mc-val">${fmtR(despesasMesVal)}</div><div class="mc-sub">${nDespesas} despesa${nDespesas!==1?'s':''} geral</div></div>
+    <div class="mc mc-red"><div class="mc-label">Total saídas</div><div class="mc-val">${fmtR(totalSaidas)}</div><div class="mc-sub">boletos + compras + despesas</div></div>
+  </div>
+
+  <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Balanço</div>
+  <div class="metrics" style="margin-bottom:16px">
+    <div class="mc ${saldo>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo projetado</div><div class="mc-val">${fmtR(saldo)}</div><div class="mc-sub">receita − todas saídas</div></div>
+    <div class="mc ${saldoReal>=0?'mc-green':'mc-red'}"><div class="mc-label">Saldo real</div><div class="mc-val">${fmtR(saldoReal)}</div><div class="mc-sub">recebido − gastos efetivos</div></div>
+  </div>`;
+},
+
 projecao() {
   const prox=Array.from({length:6},(_,i)=>{const d=addMeses(new Date(hoje),i);return{d,label:fmtMes(d),rec:0,pagar:0,cnt:0};});
   clientes.forEach(c=>(c.parcelas||[]).filter(p=>!p.paga).forEach(p=>{
@@ -1128,6 +1393,7 @@ async function cadastrarCliente() {
   }));
   const {error:e2}=await db.from('parcelas').insert(parcelas);
   if(e2){msg('fm','Erro parcelas: '+e2.message,false);if(btn){btn.disabled=false;btn.textContent='Cadastrar cliente';}return;}
+  await _salvarNovosProdutos(prods);
   msg('fm',`"${nome}" cadastrado com sucesso!`,true);
   if(btn){btn.disabled=false;btn.textContent='Cadastrar cliente';}
   ['fn','ft','fv','fnp','fcpf','frg','fprof','fem','fend','fcep','fent','fpraz'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
@@ -1225,6 +1491,72 @@ async function reverterBoletoPago(id) {
   const {error}=await db.from('boletos').update({pago:false}).eq('id',id);
   if (error){alert('Erro: '+error.message);return;}
   await loadAll(); renders.boletos();
+}
+
+// ─── Compras / Despesas ─────────────────────────────────────────────────────
+function toggleFormCompra(){document.getElementById('form-compra')?.classList.toggle('open')}
+function toggleFormDespesa(){document.getElementById('form-despesa')?.classList.toggle('open')}
+
+function mudarResumoMes(dir) {
+  resumoMes = new Date(resumoMes.getFullYear(), resumoMes.getMonth()+dir, 1);
+  renders.resumo();
+}
+function mudarComprasMes(dir) {
+  comprasMes = new Date(comprasMes.getFullYear(), comprasMes.getMonth()+dir, 1);
+  renders.compras();
+}
+function mudarDespesasMes(dir) {
+  despesasMes = new Date(despesasMes.getFullYear(), despesasMes.getMonth()+dir, 1);
+  renders.despesas();
+}
+
+async function cadastrarCompra() {
+  const item=document.getElementById('cp-item').value.trim();
+  const fabrica=document.getElementById('cp-fab').value.trim();
+  const valor=parseFloat(document.getElementById('cp-val').value);
+  const fpg=document.getElementById('cp-fpg').value;
+  const ds=document.getElementById('cp-data').value;
+  if(!item||!valor||!ds){msg('cpm','Preencha os campos obrigatórios.',false);return;}
+  const btn=document.getElementById('btn-compra');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  const {error}=await db.from('compras').insert({item,fabrica:fabrica||null,valor,forma_pagamento:fpg||null,data:ds});
+  if(error){msg('cpm','Erro: '+error.message,false);if(btn){btn.disabled=false;btn.textContent='Cadastrar compra';}return;}
+  await _salvarNovosProdutos([item]);
+  msg('cpm','Compra cadastrada!',true);
+  if(btn){btn.disabled=false;btn.textContent='Cadastrar compra';}
+  ['cp-item','cp-fab','cp-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const fpgEl=document.getElementById('cp-fpg');if(fpgEl)fpgEl.selectedIndex=0;
+  await loadAll(); renders.compras();
+}
+
+async function excluirCompra(id) {
+  const {error}=await db.from('compras').delete().eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  await loadAll(); renders.compras();
+}
+
+async function cadastrarDespesa() {
+  const item=document.getElementById('dp-item').value.trim();
+  const fornecedor=document.getElementById('dp-forn').value.trim();
+  const valor=parseFloat(document.getElementById('dp-val').value);
+  const fpg=document.getElementById('dp-fpg').value;
+  const ds=document.getElementById('dp-data').value;
+  if(!item||!valor||!ds){msg('dpm','Preencha os campos obrigatórios.',false);return;}
+  const btn=document.getElementById('btn-despesa');
+  if(btn){btn.disabled=true;btn.textContent='Salvando...';}
+  const {error}=await db.from('despesas').insert({item,fornecedor:fornecedor||null,valor,forma_pagamento:fpg||null,data:ds});
+  if(error){msg('dpm','Erro: '+error.message,false);if(btn){btn.disabled=false;btn.textContent='Cadastrar despesa';}return;}
+  msg('dpm','Despesa cadastrada!',true);
+  if(btn){btn.disabled=false;btn.textContent='Cadastrar despesa';}
+  ['dp-item','dp-forn','dp-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const fpgEl=document.getElementById('dp-fpg');if(fpgEl)fpgEl.selectedIndex=0;
+  await loadAll(); renders.despesas();
+}
+
+async function excluirDespesa(id) {
+  const {error}=await db.from('despesas').delete().eq('id',id);
+  if(error){alert('Erro: '+error.message);return;}
+  await loadAll(); renders.despesas();
 }
 
 // ─── Contrato ────────────────────────────────────────────────────────────────
@@ -1438,6 +1770,18 @@ function baixarContrato(cId, formato) {
     <div class="drawer-item" data-tab="parcelas" onclick="showTabMob('parcelas')">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
       Atrasos
+    </div>
+    <div class="drawer-item" data-tab="compras" onclick="showTabMob('compras')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Compras
+    </div>
+    <div class="drawer-item" data-tab="despesas" onclick="showTabMob('despesas')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5Z"/><path d="M21 12h-3a2 2 0 0 0 0 4h3Z"/></svg>
+      Despesas
+    </div>
+    <div class="drawer-item" data-tab="resumo" onclick="showTabMob('resumo')">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 4h16v2H4z"/><path d="M4 10h16v2H4z"/><path d="M4 16h10v2H4z"/><circle cx="19" cy="17" r="3"/><path d="M19 15v2h2"/></svg>
+      Resumo mensal
     </div>
     <div class="drawer-item" data-tab="projecao" onclick="showTabMob('projecao')">
       <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
