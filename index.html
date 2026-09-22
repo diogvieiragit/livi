@@ -301,7 +301,7 @@ button.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
 <datalist id="prod-catalog"></datalist>
 
 <!-- CLIENT MODAL -->
-<div class="modal-overlay" id="modal-overlay" onclick="fecharModal(event)">
+<div class="modal-overlay" id="modal-overlay">
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="modal-title">—</span>
@@ -493,8 +493,7 @@ function abrirModal(cId) {
   document.getElementById('modal-overlay').classList.add('open');
 }
 
-function fecharModal(e) {
-  if (e&&e.target!==document.getElementById('modal-overlay')) return;
+function fecharModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   _modalCId = null;
 }
