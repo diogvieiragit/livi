@@ -369,6 +369,10 @@ let visaoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 let comprasMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 let despesasMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
 let resumoMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+let boletosMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+let boletosDE = '', boletosATE = '';
+let comprasDE = '', comprasATE = '';
+let despesasDE = '', despesasATE = '';
 
 // ─── Data Layer ──────────────────────────────────────────────────────────────
 async function loadAll() {
@@ -540,8 +544,9 @@ function _renderModalView(c) {
             <span>${p.num}ª · ${fmtDate(p.venc)}</span>
             ${!p.paga&&atd>0?`<span style="font-size:10px;color:var(--red);margin-left:6px">(${atd}d)</span>`:''}
           </div>
-          <div style="display:flex;align-items:center;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px" id="parc-val-${p.id}">
             <span class="mono ${p.paga?'parc-paga':''}">${fmtR(p.valor)}</span>
+            ${!p.paga?`<button class="action-btn" style="font-size:11px;padding:2px 5px" onclick="editarValorParcela('${p.id}','${c.id}',${p.valor})">&#9998;</button>`:''}
             ${!p.paga?`<button class="action-btn" onclick="marcarParcelaPaga('${p.id}','${c.id}')">✓ Pago</button>`:`<button class="action-btn" style="color:var(--text3)" onclick="reverterParcelaPaga('${p.id}','${c.id}')">↩ Reverter</button>`}
           </div>
         </div>`;
@@ -687,6 +692,16 @@ async function salvarEdicaoCliente(cId) {
       await Promise.all(sorted.map((p,i)=>
         db.from('parcelas').update({venc:addMeses(new Date(inicio),i).toISOString().split('T')[0]}).eq('id',p.id)
       ));
+    }
+  }
+  if (!isNaN(total) && total>0 && c && (total !== (c.total||0) || entrada !== (c.entrada||0))) {
+    const sorted = (c.parcelas||[]).sort((a,b)=>a.num-b.num);
+    const paidSum = sorted.filter(p=>p.paga).reduce((s,p)=>s+p.valor,0);
+    const unpaid = sorted.filter(p=>!p.paga);
+    if (unpaid.length>0) {
+      const remaining = total - entrada - paidSum;
+      const newVal = Math.round((remaining/unpaid.length)*100)/100;
+      if (newVal>0) await Promise.all(unpaid.map(p=>db.from('parcelas').update({valor:newVal}).eq('id',p.id)));
     }
   }
   await loadAll();
@@ -937,19 +952,42 @@ parcelas() {
 },
 
 boletos() {
-  const pend=boletos.filter(b=>!b.pago).sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
-  const pagos=boletos.filter(b=>b.pago);
+  const bm = boletosMes;
+  const bmM = bm.getMonth(), bmY = bm.getFullYear();
+  const mesLabel = bm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  const isHoje = bmM===hoje.getMonth()&&bmY===hoje.getFullYear();
+  const inRange = (ds) => {
+    if (boletosDE && boletosATE) return ds >= boletosDE && ds <= boletosATE;
+    const d=new Date(ds+'T12:00:00'); return d.getMonth()===bmM&&d.getFullYear()===bmY;
+  };
+  const filtrados = boletos.filter(b=>inRange(b.venc));
+  const pend=filtrados.filter(b=>!b.pago).sort((a,b2)=>new Date(a.venc)-new Date(b2.venc));
+  const pagos=filtrados.filter(b=>b.pago);
   const totPend=pend.reduce((s,b)=>s+b.valor,0);
   const venc=pend.filter(b=>diff(hoje,new Date(b.venc+'T12:00:00'))>0);
   const totVenc=venc.reduce((s,b)=>s+b.valor,0);
-  const prox30=pend.filter(b=>{const d2=diff(new Date(b.venc+'T12:00:00'),hoje);return d2>=0&&d2<=30;}).reduce((s,b)=>s+b.valor,0);
   document.getElementById('boletos').innerHTML=`
-    <div class="page-title">Boletos fornecedor</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+      <div class="page-title" style="margin-bottom:0">Boletos fornecedor</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarBoletosMes(-1)">&#8592;</button>
+        <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarBoletosMes(1)">&#8594;</button>
+        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="boletosMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);boletosDE='';boletosATE='';renders.boletos()">Hoje</button>`:''}
+        <button class="btn-ghost" onclick="toggleFormBol()">+ Novo</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">De</label>
+      <input type="date" id="bol-de" value="${boletosDE}" onchange="boletosDE=this.value;renders.boletos()" style="padding:5px 8px;font-size:12px;width:auto">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">Até</label>
+      <input type="date" id="bol-ate" value="${boletosATE}" onchange="boletosATE=this.value;renders.boletos()" style="padding:5px 8px;font-size:12px;width:auto">
+      ${(boletosDE||boletosATE)?`<button class="btn-ghost" style="padding:3px 10px;font-size:10px" onclick="boletosDE='';boletosATE='';renders.boletos()">Limpar</button>`:''}
+    </div>
     <div class="metrics">
       <div class="mc"><div class="mc-label">Pendentes</div><div class="mc-val">${pend.length}</div></div>
       <div class="mc mc-red"><div class="mc-label">Total a pagar</div><div class="mc-val">${fmtR(totPend)}</div></div>
       <div class="mc mc-red"><div class="mc-label">Vencidos</div><div class="mc-val">${fmtR(totVenc)}</div><div class="mc-sub">${venc.length} boleto${venc.length!==1?'s':''}</div></div>
-      <div class="mc mc-amber"><div class="mc-label">Próx. 30 dias</div><div class="mc-val">${fmtR(prox30)}</div></div>
     </div>
     <div class="form-panel" id="form-bol">
       <div class="form-grid">
@@ -973,7 +1011,7 @@ boletos() {
       <div id="bm"></div>
     </div>
     <div class="card">
-      <div class="card-header">Em aberto <button class="btn-ghost" style="font-size:11px;padding:5px 12px" onclick="toggleFormBol()">+ Novo boleto</button></div>
+      <div class="card-header">Em aberto</div>
       <div class="tbl-wrap"><table>
         <thead><tr>
           <th style="width:20%">Fornecedor</th>
@@ -1000,15 +1038,16 @@ boletos() {
                 <button class="action-btn danger" style="margin-left:4px" onclick="excluirBoleto('${b.id}')">✕</button>
               </td>
             </tr>`;
-          }).join(''):`<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pendente</td></tr>`}
+          }).join(''):`<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto neste período</td></tr>`}
         </tbody>
+        <tfoot><tr><td colspan="5" style="font-weight:600;color:var(--text2)">Total pendente</td><td style="font-weight:600" class="mono">${fmtR(totPend)}</td></tr></tfoot>
       </table></div>
     </div>
     <div class="card">
-      <div class="card-header">Pagos recentemente</div>
+      <div class="card-header">Pagos no período</div>
       <div class="tbl-wrap"><table>
         <thead><tr><th style="width:28%">Fornecedor</th><th class="hide-mob" style="width:33%">Descrição</th><th style="width:16%">Valor</th><th style="width:23%">Ações</th></tr></thead>
-        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td><td style="overflow:visible;white-space:nowrap"><button class="action-btn" style="color:var(--text3)" onclick="reverterBoletoPago('${b.id}')">↩ Reverter</button> <button class="action-btn danger" onclick="excluirBoleto('${b.id}')">✕</button></td></tr>`).join(''):`<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago</td></tr>`}</tbody>
+        <tbody>${pagos.length?pagos.map(b=>`<tr><td>${esc(b.fornecedor)}</td><td class="hide-mob">${esc(b.descricao)}</td><td class="mono" style="color:var(--text3)">${fmtR(b.valor)}</td><td style="overflow:visible;white-space:nowrap"><button class="action-btn" style="color:var(--text3)" onclick="reverterBoletoPago('${b.id}')">↩ Reverter</button> <button class="action-btn danger" onclick="excluirBoleto('${b.id}')">✕</button></td></tr>`).join(''):`<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:20px">Nenhum boleto pago neste período</td></tr>`}</tbody>
       </table></div>
     </div>`;
 },
@@ -1019,18 +1058,29 @@ compras() {
   const cmM = cm.getMonth(), cmY = cm.getFullYear();
   const mesLabel = cm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const isHoje = cmM===hoje.getMonth()&&cmY===hoje.getFullYear();
-  const list = compras.filter(c=>{const d=new Date(c.data+'T12:00:00');return d.getMonth()===cmM&&d.getFullYear()===cmY;}).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const inRange = (ds) => {
+    if (comprasDE && comprasATE) return ds >= comprasDE && ds <= comprasATE;
+    const d=new Date(ds+'T12:00:00'); return d.getMonth()===cmM&&d.getFullYear()===cmY;
+  };
+  const list = compras.filter(c=>inRange(c.data)).sort((a,b)=>new Date(b.data)-new Date(a.data));
   const total = list.reduce((s,c)=>s+(c.valor||0),0);
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div class="page-title" style="margin-bottom:0">Compras</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(-1)">←</button>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(-1)">&#8592;</button>
         <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
-        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(1)">→</button>
-        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="comprasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.compras()">Hoje</button>`:''}
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarComprasMes(1)">&#8594;</button>
+        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="comprasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);comprasDE='';comprasATE='';renders.compras()">Hoje</button>`:''}
         <button class="btn-ghost" onclick="toggleFormCompra()">+ Novo</button>
       </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">De</label>
+      <input type="date" id="cp-de" value="${comprasDE}" onchange="comprasDE=this.value;renders.compras()" style="padding:5px 8px;font-size:12px;width:auto">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">Até</label>
+      <input type="date" id="cp-ate" value="${comprasATE}" onchange="comprasATE=this.value;renders.compras()" style="padding:5px 8px;font-size:12px;width:auto">
+      ${(comprasDE||comprasATE)?`<button class="btn-ghost" style="padding:3px 10px;font-size:10px" onclick="comprasDE='';comprasATE='';renders.compras()">Limpar</button>`:''}
     </div>
     <div class="form-panel" id="form-compra">
       <div class="form-grid">
@@ -1074,18 +1124,29 @@ despesas() {
   const dmM = dm.getMonth(), dmY = dm.getFullYear();
   const mesLabel = dm.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
   const isHoje = dmM===hoje.getMonth()&&dmY===hoje.getFullYear();
-  const list = despesas.filter(d=>{const dt=new Date(d.data+'T12:00:00');return dt.getMonth()===dmM&&dt.getFullYear()===dmY;}).sort((a,b)=>new Date(b.data)-new Date(a.data));
+  const inRange = (ds) => {
+    if (despesasDE && despesasATE) return ds >= despesasDE && ds <= despesasATE;
+    const d=new Date(ds+'T12:00:00'); return d.getMonth()===dmM&&d.getFullYear()===dmY;
+  };
+  const list = despesas.filter(d=>inRange(d.data)).sort((a,b)=>new Date(b.data)-new Date(a.data));
   const total = list.reduce((s,d)=>s+(d.valor||0),0);
   el.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <div class="page-title" style="margin-bottom:0">Despesas</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(-1)">←</button>
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(-1)">&#8592;</button>
         <span style="font-size:14px;font-weight:600;color:var(--text);min-width:140px;text-align:center;text-transform:capitalize">${mesLabel}</span>
-        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(1)">→</button>
-        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="despesasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);renders.despesas()">Hoje</button>`:''}
+        <button class="btn-ghost" style="padding:6px 10px;font-size:16px;line-height:1" onclick="mudarDespesasMes(1)">&#8594;</button>
+        ${!isHoje?`<button class="btn-ghost" style="padding:5px 12px;font-size:11px" onclick="despesasMes=new Date(hoje.getFullYear(),hoje.getMonth(),1);despesasDE='';despesasATE='';renders.despesas()">Hoje</button>`:''}
         <button class="btn-ghost" onclick="toggleFormDespesa()">+ Novo</button>
       </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">De</label>
+      <input type="date" id="dp-de" value="${despesasDE}" onchange="despesasDE=this.value;renders.despesas()" style="padding:5px 8px;font-size:12px;width:auto">
+      <label style="font-size:11px;color:var(--text3);font-weight:600">Até</label>
+      <input type="date" id="dp-ate" value="${despesasATE}" onchange="despesasATE=this.value;renders.despesas()" style="padding:5px 8px;font-size:12px;width:auto">
+      ${(despesasDE||despesasATE)?`<button class="btn-ghost" style="padding:3px 10px;font-size:10px" onclick="despesasDE='';despesasATE='';renders.despesas()">Limpar</button>`:''}
     </div>
     <div class="form-panel" id="form-despesa">
       <div class="form-grid">
@@ -1490,6 +1551,24 @@ async function reverterParcelaPaga(parcelaId, cId) {
   await loadAll(); _refreshActiveSection(); abrirModal(cId);
 }
 
+function editarValorParcela(pId, cId, valorAtual) {
+  const container = document.getElementById('parc-val-'+pId);
+  if (!container) return;
+  container.innerHTML = `
+    <input type="number" id="parc-edit-${pId}" value="${valorAtual}" style="width:90px;padding:4px 8px;font-size:12px" step="0.01">
+    <button class="action-btn" onclick="salvarValorParcela('${pId}','${cId}')">&#10003;</button>
+    <button class="action-btn" style="color:var(--text3)" onclick="abrirModal('${cId}')">&#10005;</button>`;
+  document.getElementById('parc-edit-'+pId)?.focus();
+}
+
+async function salvarValorParcela(pId, cId) {
+  const val = parseFloat(document.getElementById('parc-edit-'+pId)?.value);
+  if (isNaN(val) || val <= 0) return;
+  const {error} = await db.from('parcelas').update({valor: Math.round(val*100)/100}).eq('id', pId);
+  if (error) { alert('Erro: '+error.message); return; }
+  await loadAll(); _refreshActiveSection(); abrirModal(cId);
+}
+
 async function reverterBoletoPago(id) {
   const {error}=await db.from('boletos').update({pago:false}).eq('id',id);
   if (error){alert('Erro: '+error.message);return;}
@@ -1504,12 +1583,19 @@ function mudarResumoMes(dir) {
   resumoMes = new Date(resumoMes.getFullYear(), resumoMes.getMonth()+dir, 1);
   renders.resumo();
 }
+function mudarBoletosMes(dir) {
+  boletosMes = new Date(boletosMes.getFullYear(), boletosMes.getMonth()+dir, 1);
+  boletosDE = ''; boletosATE = '';
+  renders.boletos();
+}
 function mudarComprasMes(dir) {
   comprasMes = new Date(comprasMes.getFullYear(), comprasMes.getMonth()+dir, 1);
+  comprasDE = ''; comprasATE = '';
   renders.compras();
 }
 function mudarDespesasMes(dir) {
   despesasMes = new Date(despesasMes.getFullYear(), despesasMes.getMonth()+dir, 1);
+  despesasDE = ''; despesasATE = '';
   renders.despesas();
 }
 
