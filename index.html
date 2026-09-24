@@ -1682,6 +1682,12 @@ function _gerarContratoHTML(c){
   const prazo=c.prazo_entrega||30;
   const prodRows=prods.length?prods.map(p=>`<tr><td style="border:1px solid #999;padding:6px;color:#000">${p}</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#000">1</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total/prods.length)}</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total/prods.length)}</td></tr>`).join(''):`<tr><td style="border:1px solid #999;padding:6px;color:#000">—</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#000">1</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total)}</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total)}</td></tr>`;
   return`<div style="font-family:'Times New Roman',serif;font-size:13px;color:#000 !important;line-height:1.7;max-width:700px;margin:0 auto;padding:40px 30px;background:#fff">
+<style>
+#_pdf_temp h3{page-break-after:avoid !important}
+#_pdf_temp p{page-break-inside:avoid !important;orphans:3;widows:3}
+#_pdf_temp table{page-break-inside:avoid !important}
+#_pdf_temp .contrato-assinaturas{page-break-inside:avoid !important}
+</style>
 <div style="text-align:center;margin-bottom:30px">
   <img src="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png" style="height:60px;margin-bottom:10px" crossorigin="anonymous">
   <h2 style="font-size:18px;font-weight:bold;margin:10px 0;color:#000">CONTRATO DE COMPRA E VENDA DE MÓVEIS</h2>
@@ -1769,6 +1775,7 @@ ${prodRows}
 <p><b>11.7.</b> O presente Contrato obriga as Partes e seus herdeiros e sucessores a qualquer título, não podendo ser cedido ou transferido por qualquer das Partes sem a prévia e expressa anuência, por escrito, da outra Parte.</p>
 <p><b>11.8.</b> Para dirimir quaisquer controvérsias oriundas deste Contrato, as Partes elegem o Foro da Comarca de São Paulo, Estado de São Paulo, com exclusão de qualquer outro, por mais privilegiado que seja.</p>
 
+<div class="contrato-assinaturas">
 <p style="text-align:center;margin:30px 0 10px">São Paulo, ${_dataExtenso(dataCont)}.</p>
 
 <div style="margin-top:50px">
@@ -1782,6 +1789,7 @@ ${prodRows}
 <p style="font-weight:bold;margin-bottom:16px">TESTEMUNHAS</p>
 <p>1. _____________________________________<br>Nome: ______________________________<br>CPF: __________________</p>
 <p style="margin-top:20px">2. _____________________________________<br>Nome: ______________________________<br>CPF: __________________</p>
+</div>
 </div>
 </div>`;
 }
@@ -1801,6 +1809,7 @@ function baixarContrato(cId, formato) {
     container.innerHTML=html;
     document.body.appendChild(container);
     html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},
+      pagebreak:{mode:['avoid-all','css']},
       html2canvas:{scale:2,useCORS:true,onclone:function(doc){
         var a=doc.getElementById('app');if(a)a.style.display='none';
         var l=doc.getElementById('loading');if(l)l.style.display='none';
