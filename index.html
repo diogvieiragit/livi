@@ -8,7 +8,8 @@
 <link rel="icon" href="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png" type="image/png">
 <link rel="apple-touch-icon" href="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
 :root {
@@ -1681,14 +1682,7 @@ function _gerarContratoHTML(c){
   const fpg=c.forma_pagamento||'PIX';
   const prazo=c.prazo_entrega||30;
   const prodRows=prods.length?prods.map(p=>`<tr><td style="border:1px solid #999;padding:6px;color:#000">${p}</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#000">1</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total/prods.length)}</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total/prods.length)}</td></tr>`).join(''):`<tr><td style="border:1px solid #999;padding:6px;color:#000">—</td><td style="border:1px solid #999;padding:6px;text-align:center;color:#000">1</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total)}</td><td style="border:1px solid #999;padding:6px;text-align:right;color:#000">${fmtR(c.total)}</td></tr>`;
-  return`<div style="font-family:'Times New Roman',serif;font-size:13px;color:#000 !important;line-height:1.7;max-width:700px;margin:0 auto;padding:40px 30px;background:#fff">
-<style>
-#_pdf_temp h3{page-break-after:avoid !important}
-#_pdf_temp p{page-break-inside:avoid !important;orphans:3;widows:3}
-#_pdf_temp table{page-break-inside:avoid !important}
-#_pdf_temp .contrato-assinaturas{page-break-inside:avoid !important}
-</style>
-<div style="text-align:center;margin-bottom:30px">
+  return`<div style="font-family:'Times New Roman',serif;font-size:13px;color:#000 !important;line-height:1.7;max-width:700px;margin:0 auto;padding:40px 30px;background:#fff"><div style="text-align:center;margin-bottom:30px">
   <img src="https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png" style="height:60px;margin-bottom:10px" crossorigin="anonymous">
   <h2 style="font-size:18px;font-weight:bold;margin:10px 0;color:#000">CONTRATO DE COMPRA E VENDA DE MÓVEIS</h2>
 </div>
@@ -1794,7 +1788,86 @@ ${prodRows}
 </div>`;
 }
 
-function baixarContrato(cId, formato) {
+async function _imgDataURL(url){
+  try{
+    const b=await (await fetch(url)).blob();
+    return await new Promise(res=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>res(null);fr.readAsDataURL(b);});
+  }catch(e){return null;}
+}
+
+// Converte o HTML do contrato (mesmo usado no Word) em definição do pdfmake, que pagina por linha de texto.
+function _contratoPdfDef(html, logo){
+  const root=new DOMParser().parseFromString(html,'text/html').body.firstElementChild;
+  const px=v=>Math.round(parseFloat(v)*0.75);
+  const margens=(st,def)=>{
+    const m=[0,def[0],0,def[1]];
+    const sh=st.match(/(?:^|;)\s*margin:\s*([^;]+)/);
+    if(sh){const p=sh[1].trim().split(/\s+/);if(p.length>=3){m[1]=px(p[0]);m[3]=px(p[2]);}else{m[1]=m[3]=px(p[0]);}}
+    const t=st.match(/margin-top:\s*([\d.]+)px/);if(t)m[1]=px(t[1]);
+    const b=st.match(/margin-bottom:\s*([\d.]+)px/);if(b)m[3]=px(b[1]);
+    return m;
+  };
+  const runs=el=>{
+    const out=[];
+    const walk=(n,bold)=>n.childNodes.forEach(ch=>{
+      if(ch.nodeType===3){
+        const t=ch.textContent.replace(/\s+/g,' ');
+        if(t)out.push(bold?{text:t,bold:true}:{text:t});
+      }
+      else if(ch.nodeName==='BR')out.push({text:'\n'});
+      else if(ch.nodeType===1)walk(ch,bold||/^(B|STRONG|TH)$/.test(ch.nodeName));
+    });
+    walk(el,false);
+    out.forEach((r,i)=>{
+      if(i===0||out[i-1].text==='\n')r.text=r.text.replace(/^ /,'');
+      if(i===out.length-1||out[i+1].text==='\n')r.text=r.text.replace(/ $/,'');
+    });
+    return out;
+  };
+  const conv=el=>{
+    const tag=el.nodeName, st=el.getAttribute('style')||'';
+    const align=/text-align:\s*center/.test(st)?'center':/text-align:\s*right/.test(st)?'right':'left';
+    if(tag==='IMG')return logo?{image:logo,fit:[160,45],alignment:'center',margin:[0,0,0,6]}:null;
+    if(tag==='H2')return{text:el.textContent.trim(),fontSize:13,bold:true,alignment:'center',margin:[0,4,0,14]};
+    if(tag==='H3')return{text:el.textContent.trim(),fontSize:11,bold:true,decoration:/underline/.test(st)?'underline':undefined,margin:[0,10,0,5],headlineLevel:1};
+    if(tag==='P')return{text:runs(el),alignment:align,bold:/font-weight:\s*bold/.test(st),margin:margens(st,[0,5])};
+    if(tag==='TABLE'){
+      const body=[...el.querySelectorAll('tr')].map(tr=>{
+        const rowBold=/font-weight:\s*bold/.test(tr.getAttribute('style')||'');
+        const rowFill=/background/.test(tr.getAttribute('style')||'')?'#eeeeee':undefined;
+        const cells=[];
+        [...tr.children].forEach(td=>{
+          const s=td.getAttribute('style')||'', cs=parseInt(td.getAttribute('colspan'))||1;
+          const cell={text:runs(td),bold:rowBold||td.nodeName==='TH',fillColor:rowFill,alignment:/text-align:\s*right/.test(s)?'right':/text-align:\s*center/.test(s)||td.nodeName==='TH'&&!/text-align:\s*left/.test(s)?'center':'left'};
+          if(cs>1)cell.colSpan=cs;
+          cells.push(cell);
+          for(let i=1;i<cs;i++)cells.push({});
+        });
+        return cells;
+      });
+      const n=body[0]?.length||1;
+      return{table:{headerRows:1,dontBreakRows:true,widths:['*',...Array(n-1).fill('auto')],body},
+        layout:{hLineColor:()=>'#999',vLineColor:()=>'#999',paddingTop:()=>4,paddingBottom:()=>4},margin:[0,6,0,10]};
+    }
+    if(tag==='DIV'){
+      const stack=[...el.children].map(conv).filter(Boolean);
+      const node={stack,margin:margens(st,[0,0])};
+      if(el.classList.contains('contrato-assinaturas'))node.unbreakable=true;
+      return node;
+    }
+    return null;
+  };
+  return{
+    pageSize:'A4',
+    pageMargins:[57,50,57,50],
+    content:[...root.children].map(conv).filter(Boolean),
+    defaultStyle:{fontSize:10,lineHeight:1.25},
+    footer:(pg,total)=>({text:`Página ${pg} de ${total}`,alignment:'center',fontSize:8,color:'#666',margin:[0,20,0,0]}),
+    pageBreakBefore:(node,after)=>node.headlineLevel===1&&after.length===0
+  };
+}
+
+async function baixarContrato(cId, formato) {
   const c=clientes.find(x=>x.id===cId); if(!c)return;
   const html=_gerarContratoHTML(c);
   const nomeArq='Contrato_'+c.nome.replace(/[^a-zA-ZÀ-ú0-9]/g,'_');
@@ -1804,20 +1877,8 @@ function baixarContrato(cId, formato) {
     const a=document.createElement('a');a.href=url;a.download=nomeArq+'.doc';a.click();
     URL.revokeObjectURL(url);
   } else {
-    const container=document.createElement('div');
-    container.id='_pdf_temp';
-    container.innerHTML=html;
-    document.body.appendChild(container);
-    html2pdf().set({margin:[10,10,10,10],filename:nomeArq+'.pdf',image:{type:'jpeg',quality:0.98},
-      pagebreak:{mode:['avoid-all','css']},
-      html2canvas:{scale:2,useCORS:true,onclone:function(doc){
-        var a=doc.getElementById('app');if(a)a.style.display='none';
-        var l=doc.getElementById('loading');if(l)l.style.display='none';
-        var m=doc.getElementById('modal-overlay');if(m)m.style.display='none';
-        var bn=doc.querySelector('.bottom-nav');if(bn)bn.style.display='none';
-      }},
-      jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
-    }).from(container).save().then(()=>container.remove());
+    const logo=await _imgDataURL('https://jbezirmtygdwtiexgfow.supabase.co/storage/v1/object/public/images/1.png');
+    pdfMake.createPdf(_contratoPdfDef(html,logo)).download(nomeArq+'.pdf');
   }
 }
 
